@@ -1,6 +1,9 @@
 #pragma once
 
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
 #include "BoneControllers/AnimNode_SkeletalControlBase.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 #include "AnimNode_DrawPhysicsAsset.generated.h"
 
 /**
@@ -15,6 +18,14 @@ public:
 	/** Physics asset to use. If empty use the skeletal mesh's default physics asset */
 	UPROPERTY(EditAnywhere, Category = Settings)
 	UPhysicsAsset* OverridePhysicsAsset = nullptr;
+
+protected:
+	// FAnimNode_SkeletalControlBase interface
+	virtual void OnInitializeAnimInstance(const struct FAnimInstanceProxy* InProxy, const class UAnimInstance* InAnimInstance) override;
+	virtual bool NeedsOnInitializeAnimInstance() const override { return true; }
+	virtual bool IsValidToEvaluate(const class USkeleton* Skeleton, const struct FBoneContainer& RequiredBones) override { return true; }
+	virtual void EvaluateSkeletalControl_AnyThread(struct FComponentSpacePoseContext& Output, TArray<struct FBoneTransform>& OutBoneTransforms) override;
+	// End of FAnimNode_SkeletalControlBase interface
 
 private:
 	UPhysicsAsset* UsePhysicsAsset = nullptr;
