@@ -39,6 +39,8 @@ public class PhysAnimSandbox : ModuleRules
                 "AnimGraphRuntime",
                 "UnrealEd",
 				"BlueprintGraph",
+				"SlateCore",
+				"EditorStyle",
 			}
 			);
 		

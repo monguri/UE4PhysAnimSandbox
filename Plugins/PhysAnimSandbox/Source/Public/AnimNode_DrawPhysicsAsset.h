@@ -32,6 +32,6 @@ private:
 	UPhysicsAsset* UsePhysicsAsset = nullptr;
 
 	UPROPERTY(transient)
-	UMaterialInstanceDynamic* BodyMaterial = nullptr;
+	UMaterialInstanceDynamic* ElemSelectedMaterial = nullptr;
 };
 
