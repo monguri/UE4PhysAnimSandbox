@@ -12,16 +12,11 @@ void FAnimNode_DrawPhysicsAsset::OnInitializeAnimInstance(const FAnimInstancePro
 
 	const FReferenceSkeleton& SkelMeshRefSkel = SkeletalMeshAsset->RefSkeleton;
 	UsePhysicsAsset = OverridePhysicsAsset ? OverridePhysicsAsset : InAnimInstance->GetSkelMeshComponent()->GetPhysicsAsset();
-
-	// UPhysicsAssetEditorSkeletalMeshComponent::UPhysicsAssetEditorSkeletalMeshComponent()を参考にしている
-	// Body materials
-	UMaterialInterface* BaseElemSelectedMaterial = LoadObject<UMaterialInterface>(NULL, TEXT("/Engine/EditorMaterials/PhAT_ElemSelectedMaterial.PhAT_ElemSelectedMaterial"), NULL, LOAD_None, NULL);
-	ElemSelectedMaterial = UMaterialInstanceDynamic::Create(BaseElemSelectedMaterial, GetTransientPackage());
 }
 
 bool FAnimNode_DrawPhysicsAsset::IsValidToEvaluate(const class USkeleton* Skeleton, const struct FBoneContainer& RequiredBones)
 {
-	return (UsePhysicsAsset != nullptr && ElemSelectedMaterial != nullptr);
+	return (UsePhysicsAsset != nullptr);
 }
 
 namespace
@@ -72,20 +67,9 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 {
 	const USkeletalMeshComponent* SkeletalMeshComp = Output.AnimInstanceProxy->GetSkelMeshComponent();
 	UWorld* World = GEngine->GetWorldFromContextObject(SkeletalMeshComp, EGetWorldErrorMode::LogAndReturnNull);
-	const FTransform& CStoWS = SkeletalMeshComp->GetComponentToWorld();
 
-	// set opacity of our materials
-	static FName OpacityName(TEXT("Opacity"));
-	ElemSelectedMaterial->SetScalarParameterValue(OpacityName, 0.5f); // 0.5fは適当
-
-	// TODO:ここらへん消して、モジュールからSlateとEditorStyleの依存性を除去したい
-	static FName SelectionColorName(TEXT("SelectionColor"));
-	const FSlateColor SelectionColor = FEditorStyle::GetSlateColor(SelectionColorName);
-	const FLinearColor LinearSelectionColor(SelectionColor.IsColorSpecified() ? SelectionColor.GetSpecifiedColor() : FLinearColor::White);
-
-	ElemSelectedMaterial->SetVectorParameterValue(SelectionColorName, LinearSelectionColor);
-
-	const FColor ElemSelectedColor = LinearSelectionColor.ToFColor(true);
+	// UPhysicsAssetEditorSkeletalMeshComponent::GetPrimitiveColor()のElemSelectedColorの色をデバッガで値を調べた
+	const FColor ElemSelectedColor = FColor(222, 163, 9);
 
 	// UPhysicsAssetEditorSkeletalMeshComponent::RenderAssetTools()を参考にしている
 
@@ -113,34 +97,8 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 			{
 				FTransform ElemTM = AggGeom->SphereElems[j].GetTransform();
 				ElemTM.ScaleTranslation(VectorScale);
-				ElemTM *= BoneTM * CStoWS;
+				ElemTM *= BoneTM;
 
-#if 0
-				FFunctionGraphTask::CreateAndDispatchWhenReady(
-					[=]() {
-						bool bPersistent = false;
-						float LifeTime = 0.0f;
-						const FColor& ShapeColor = FColor::Blue;
-
-						switch (Shape)
-						{
-							case ETngTwoBoneFootIKQueryShape::Line:
-								::DrawDebugPoint(World, InitialShapeWSPos, 5.0f, ShapeColor, bPersistent, LifeTime, ESceneDepthPriorityGroup::SDPG_Foreground);
-								break;
-							case ETngTwoBoneFootIKQueryShape::Sphere:
-								::DrawDebugSphere(World, InitialShapeWSPos, HalfExtent.X, 16, ShapeColor, bPersistent, LifeTime, ESceneDepthPriorityGroup::SDPG_Foreground);
-								break;
-							case ETngTwoBoneFootIKQueryShape::Box:
-								::DrawDebugBox(World, InitialShapeWSPos, HalfExtent, ShapeWSRot, ShapeColor, bPersistent, LifeTime, ESceneDepthPriorityGroup::SDPG_Foreground);
-								break;
-							default:
-								UE_LOG(LogTemp, Error, TEXT("Shape=%d is invalid value."), Shape);
-								break;
-						}
-					},
-					TStatId(), nullptr, ENamedThreads::GameThread
-				);
-#endif
 				FFunctionGraphTask::CreateAndDispatchWhenReady(
 					[World, ElemTM, AggGeom, j, Scale, ElemSelectedColor]() {
 						bool bPersistent = false;
@@ -157,7 +115,7 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 			{
 				FTransform ElemTM = AggGeom->BoxElems[j].GetTransform();
 				ElemTM.ScaleTranslation(VectorScale);
-				ElemTM *= BoneTM * CStoWS;
+				ElemTM *= BoneTM;
 
 				FFunctionGraphTask::CreateAndDispatchWhenReady(
 					[World, ElemTM, AggGeom, j, Scale, ElemSelectedColor]() {
@@ -174,7 +132,7 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 			{
 				FTransform ElemTM = AggGeom->SphylElems[j].GetTransform();
 				ElemTM.ScaleTranslation(VectorScale);
-				ElemTM *= BoneTM * CStoWS;
+				ElemTM *= BoneTM;
 
 				FFunctionGraphTask::CreateAndDispatchWhenReady(
 					[World, ElemTM, AggGeom, j, Scale, ElemSelectedColor]() {
@@ -182,7 +140,7 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 						float LifeTime = 0.0f;
 						const FColor& ShapeColor = FColor::Blue;
 
-						::DrawDebugCylinder(World, ElemTM.GetLocation() + ElemTM.GetUnitAxis(EAxis::Type::Z) * AggGeom->SphylElems[j].Length * Scale * 0.5f, ElemTM.GetLocation() - ElemTM.GetUnitAxis(EAxis::Type::Z) * AggGeom->SphylElems[j].Length * Scale * 0.5f, AggGeom->SphylElems[j].Radius * Scale, 16, ElemSelectedColor, bPersistent, LifeTime, ESceneDepthPriorityGroup::SDPG_Foreground);
+						::DrawDebugCapsule(World, ElemTM.GetLocation(), AggGeom->SphylElems[j].Length * Scale, AggGeom->SphylElems[j].Radius * Scale, ElemTM.GetRotation(), ElemSelectedColor, bPersistent, LifeTime, ESceneDepthPriorityGroup::SDPG_Foreground);
 					},
 					TStatId(), nullptr, ENamedThreads::GameThread
 				);
@@ -192,7 +150,7 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 			{
 				FTransform ElemTM = AggGeom->ConvexElems[j].GetTransform();
 				ElemTM.ScaleTranslation(VectorScale);
-				ElemTM *= BoneTM * CStoWS;
+				ElemTM *= BoneTM;
 
 #if 0 // TODO:とりあえず省略
 				//convex doesn't have solid draw so render lines if we're in hitTestAndBodyMode
@@ -204,7 +162,7 @@ void FAnimNode_DrawPhysicsAsset::EvaluateSkeletalControl_AnyThread(FComponentSpa
 			{
 				FTransform ElemTM = AggGeom->TaperedCapsuleElems[j].GetTransform();
 				ElemTM.ScaleTranslation(VectorScale);
-				ElemTM *= BoneTM * CStoWS;
+				ElemTM *= BoneTM;
 
 #if 0 // TODO:とりあえず省略
 				AggGeom->TaperedCapsuleElems[j].DrawElemSolid(PDI, ElemTM, VectorScale, ElemSelectedMaterial->GetRenderProxy());
