@@ -61,7 +61,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		B0.Name = FString("Root");
 		B0.Flags = 0x02; //TODO
 		B0.NumChildren = 0;
-		B0.ParentIndex = 0;
+		B0.ParentIndex = 0; //TODO
 		B0.BonePos = J0;
 
 		SkeletalMeshData.RefBonesBinary.Add(B0);
@@ -146,8 +146,13 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 	// AssetImportDataì¬‚ÍÈ—ª
 
-	FString ObjectName = FString::Printf(TEXT("%s_Skeleton"), *SkeletalMesh->GetName());
-	USkeleton* Skeleton = CreateAsset<USkeleton>(Package->GetName(), ObjectName, true); //TODO:Parent‚ÍSkeletalMesh‚©‚ç‚Æ‚è‚½‚¢
+	UPackage* SkeltonPackage = CreatePackage(nullptr, TEXT("/Game/NewSkeleton"));
+	if(!ensure(SkeltonPackage))
+	{
+		return false;
+	}
+
+	USkeleton* Skeleton = NewObject<USkeleton>(SkeltonPackage, FName("NewSkeleton"), EObjectFlags::RF_Public | EObjectFlags::RF_Standalone | EObjectFlags::RF_Transactional);
 	if (Skeleton == nullptr)
 	{
 		return false;
