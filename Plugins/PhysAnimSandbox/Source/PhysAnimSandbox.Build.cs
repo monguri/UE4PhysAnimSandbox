@@ -39,6 +39,7 @@ public class PhysAnimSandbox : ModuleRules
                 "AnimGraphRuntime",
                 "UnrealEd",
 				"BlueprintGraph",
+				"MeshBuilder",
 			}
 			);
 		
