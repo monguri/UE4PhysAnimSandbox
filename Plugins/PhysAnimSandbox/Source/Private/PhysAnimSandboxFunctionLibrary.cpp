@@ -24,9 +24,9 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 	FSkeletalMeshImportData SkeletalMeshData;
 	{
-		SkeletalMeshData.Points.Emplace(-10.0f, 10.0f, 0.0f);
-		SkeletalMeshData.Points.Emplace(10.0f, 10.0f, 0.0f);
-		SkeletalMeshData.Points.Emplace(-10.0f, -10.0f, 0.0f);
+		SkeletalMeshData.Points.Emplace(-10.0f + 50.0f, 10.0f, 0.0f);
+		SkeletalMeshData.Points.Emplace(10.0f + 50.0f, 10.0f, 0.0f);
+		SkeletalMeshData.Points.Emplace(-10.0f + 50.0f, -10.0f, 0.0f);
 
 		SkeletalMeshImportData::FVertex V0, V1, V2;
 		V0.VertexIndex = 0;
@@ -52,32 +52,43 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshData.Faces.Add(T0);
 
-		SkeletalMeshImportData::FJointPos J0;
+		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
 		J0.Length = 0.0f; // TODO
 		J0.XSize = 5.0f; // TODO
 		J0.YSize = 5.0f; // TODO
 		J0.ZSize = 5.0f; // TODO
+		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
+		J1.Length = 0.0f; // TODO
+		J1.XSize = 5.0f; // TODO
+		J1.YSize = 5.0f; // TODO
+		J1.ZSize = 5.0f; // TODO
 
-		SkeletalMeshImportData::FBone B0;
+		SkeletalMeshImportData::FBone B0, B1;
 		B0.Name = FString("Root");
 		B0.Flags = 0x02; //TODO
-		B0.NumChildren = 0;
+		B0.NumChildren = 1;
 		B0.ParentIndex = INDEX_NONE; //TODO
 		B0.BonePos = J0;
+		B1.Name = FString("Child");
+		B1.Flags = 0x02; //TODO
+		B1.NumChildren = 0;
+		B1.ParentIndex = 0;
+		B1.BonePos = J1;
 
 		SkeletalMeshData.RefBonesBinary.Add(B0);
+		SkeletalMeshData.RefBonesBinary.Add(B1);
 
 		SkeletalMeshImportData::FRawBoneInfluence I0, I1, I2;
 		I0.Weight = 1.0f;
 		I0.VertexIndex = 0;
-		I0.BoneIndex = 0;
+		I0.BoneIndex = 1;
 		I1.Weight = 1.0f;
 		I1.VertexIndex = 1;
-		I1.BoneIndex = 0;
+		I1.BoneIndex = 1;
 		I2.Weight = 1.0f;
 		I2.VertexIndex = 2;
-		I2.BoneIndex = 0;
+		I2.BoneIndex = 1;
 
 		SkeletalMeshData.Influences.Add(I0);
 		SkeletalMeshData.Influences.Add(I1);
@@ -89,7 +100,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			SkeletalMeshData.PointToRawMap[PointIdx] = PointIdx;
 		}
 
-		SkeletalMeshData.NumTexCoords = 0;
+		SkeletalMeshData.NumTexCoords = 1;
 		SkeletalMeshData.MaxMaterialIndex = 1; // TODO
 		SkeletalMeshData.bHasVertexColors = false;
 		SkeletalMeshData.bHasNormals = false;
