@@ -5,6 +5,7 @@
 #include "Rendering/SkeletalMeshModel.h"
 #include "SkeletalMeshBuilder.h"
 #include "Animation/Skeleton.h"
+#include "Factories/FbxSkeletalMeshImportData.h"
 
 bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 {
@@ -61,7 +62,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		B0.Name = FString("Root");
 		B0.Flags = 0x02; //TODO
 		B0.NumChildren = 0;
-		B0.ParentIndex = 0; //TODO
+		B0.ParentIndex = INDEX_NONE; //TODO
 		B0.BonePos = J0;
 
 		SkeletalMeshData.RefBonesBinary.Add(B0);
@@ -81,6 +82,12 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.Influences.Add(I1);
 		SkeletalMeshData.Influences.Add(I2);
 
+		SkeletalMeshData.PointToRawMap.AddUninitialized(SkeletalMeshData.Points.Num());
+		for (int32 PointIdx = 0; PointIdx < SkeletalMeshData.Points.Num(); PointIdx++)
+		{
+			SkeletalMeshData.PointToRawMap[PointIdx] = PointIdx;
+		}
+
 		SkeletalMeshData.NumTexCoords = 0;
 		SkeletalMeshData.MaxMaterialIndex = 1; // TODO
 		SkeletalMeshData.bHasVertexColors = false;
@@ -89,6 +96,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bUseT0AsRefPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
+
+	FBox BoundingBox(SkeletalMeshData.Points.GetData(), SkeletalMeshData.Points.Num());
 
 	SkeletalMesh->PreEditChange(nullptr);
 	SkeletalMesh->InvalidateDeriveDataCacheGUID();
@@ -100,9 +109,21 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	const int32 ImportLODModelIndex = 0;
 	FSkeletalMeshLODModel& LODModel = ImportedResource->LODModels[ImportLODModelIndex];
 
+	ProcessImportMeshMaterials(SkeletalMesh->Materials, SkeletalMeshData);
+
 	int32 SkeletalDepth = 1;
+	const USkeleton* ExistingSkeleton = nullptr;
+	if (!ProcessImportMeshSkeleton(ExistingSkeleton, SkeletalMesh->RefSkeleton, SkeletalDepth, SkeletalMeshData))
+	{
+		SkeletalMesh->ClearFlags(RF_Standalone);
+		SkeletalMesh->Rename(NULL, GetTransientPackage(), REN_DontCreateRedirectors);
+		return false;
+	}
+
+	ProcessImportMeshInfluences(SkeletalMeshData);
 
 	SkeletalMesh->SaveLODImportedData(ImportLODModelIndex, SkeletalMeshData);
+	SkeletalMesh->SetLODImportedDataVersions(ImportLODModelIndex, ESkeletalMeshGeoImportVersions::LatestVersion, ESkeletalMeshSkinningImportVersions::LatestVersion);
 
 	SkeletalMesh->ResetLODInfo();
 	FSkeletalMeshLODInfo& NewLODInfo = SkeletalMesh->AddLODInfo();
@@ -111,7 +132,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	NewLODInfo.ReductionSettings.MaxDeviationPercentage = 0.0f;
 	NewLODInfo.LODHysteresis = 0.02f;
 
-	FBox BoundingBox(SkeletalMeshData.Points.GetData(), SkeletalMeshData.Points.Num());
 	SkeletalMesh->SetImportedBounds(FBoxSphereBounds(BoundingBox));
 
 	SkeletalMesh->bHasVertexColors = SkeletalMeshData.bHasVertexColors;
@@ -130,6 +150,14 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	BuildOptions.ThresholdTangentNormal = 0.0f;
 	BuildOptions.ThresholdUV = 0.0f;
 	BuildOptions.MorphThresholdPosition = 0.0f;
+
+	// TODO:必要か？
+	TArray<FVector> LODPoints;
+	TArray<SkeletalMeshImportData::FMeshWedge> LODWedges;
+	TArray<SkeletalMeshImportData::FMeshFace> LODFaces;
+	TArray<SkeletalMeshImportData::FVertInfluence> LODInfluences;
+	TArray<int32> LODPointToRawMap;
+	SkeletalMeshData.CopyLODImportData(LODPoints,LODWedges,LODFaces,LODInfluences,LODPointToRawMap);
 
 	check(SkeletalMesh->GetLODInfo(ImportLODModelIndex) != nullptr);
 	SkeletalMesh->GetLODInfo(ImportLODModelIndex)->BuildSettings = BuildOptions;
@@ -158,7 +186,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		return false;
 	}
 
-	Skeleton->UpdateReferencePoseFromMesh(SkeletalMesh);
 	SkeletalMesh->Skeleton = Skeleton;
 
 	// PhysicsAsset作成は省略
