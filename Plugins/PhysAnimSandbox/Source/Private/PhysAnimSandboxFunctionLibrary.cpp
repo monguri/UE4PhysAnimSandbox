@@ -181,6 +181,11 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		return false;
 	}
 
+	if (!Skeleton->MergeAllBonesToBoneTree(SkeletalMesh))
+	{
+		return false;
+	}
+
 	// TODO:‚¢‚é‚©H
 	Skeleton->UpdateReferencePoseFromMesh(SkeletalMesh);
 
