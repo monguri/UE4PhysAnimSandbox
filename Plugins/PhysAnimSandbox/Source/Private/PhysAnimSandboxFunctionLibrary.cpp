@@ -7,6 +7,7 @@
 #include "Animation/Skeleton.h"
 #include "Factories/FbxSkeletalMeshImportData.h"
 
+#if WITH_EDITOR // USkeletalMesh::Build()が#if WITH_EDITORでの定義なので
 bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 {
 	UPackage* Package = CreatePackage(nullptr, TEXT("/Game/NewSkeletalMesh"));
@@ -151,14 +152,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	BuildOptions.ThresholdUV = 0.0f;
 	BuildOptions.MorphThresholdPosition = 0.0f;
 
-	// TODO:必要か？
-	TArray<FVector> LODPoints;
-	TArray<SkeletalMeshImportData::FMeshWedge> LODWedges;
-	TArray<SkeletalMeshImportData::FMeshFace> LODFaces;
-	TArray<SkeletalMeshImportData::FVertInfluence> LODInfluences;
-	TArray<int32> LODPointToRawMap;
-	SkeletalMeshData.CopyLODImportData(LODPoints,LODWedges,LODFaces,LODInfluences,LODPointToRawMap);
-
 	check(SkeletalMesh->GetLODInfo(ImportLODModelIndex) != nullptr);
 	SkeletalMesh->GetLODInfo(ImportLODModelIndex)->BuildSettings = BuildOptions;
 	// TODO
@@ -171,6 +164,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	}
 
 	SkeletalMesh->CalculateInvRefMatrices();
+	// PhysicsAssetを作らなくても、SkeletalMeshRenderDataを作らないと描画できないので必要
+	SkeletalMesh->Build();
 
 	// AssetImportData作成は省略
 
@@ -186,10 +181,16 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		return false;
 	}
 
+	// TODO:いるか？
+	Skeleton->UpdateReferencePoseFromMesh(SkeletalMesh);
+
 	SkeletalMesh->Skeleton = Skeleton;
 
 	// PhysicsAsset作成は省略
 	SkeletalMesh->MarkPackageDirty();
+
+	SkeletalMesh->PhysicsAsset = nullptr;
 	return true;
 }
+#endif // WITH_EDITOR
 

@@ -10,11 +10,13 @@ class PHYSANIMSANDBOX_API UPhysAnimSandboxFunctionLibrary : public UBlueprintFun
 {
 	GENERATED_BODY()
 
+#if WITH_EDITOR
 	/** 
 	 * Create skeletal mesh and skeleton asset.
 	 * @return True if the operation succeeds, check the log for errors if it didn't succeed.
 	 */
 	UFUNCTION(BlueprintCallable)
 	static bool CreateSkeletalMesh();
+#endif
 };
 
