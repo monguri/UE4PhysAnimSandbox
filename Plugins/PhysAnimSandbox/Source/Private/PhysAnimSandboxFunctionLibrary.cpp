@@ -112,7 +112,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
 #else
-	// 9 bone 8 box
+	// 2 bone 1 box
 	{
 		SkeletalMeshData.Points.Emplace(-10.0f + 50.0f, 10.0f, 10.0f);
 		SkeletalMeshData.Points.Emplace(10.0f + 50.0f, 10.0f, 10.0f);
@@ -287,6 +287,168 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			T5.SmoothingGroups = 0;
 
 			SkeletalMeshData.Faces.Add(T5);
+		}
+
+		// Trigngle T6
+		{
+			SkeletalMeshImportData::FVertex V60, V61, V62;
+			V60.VertexIndex = 4;
+			V60.UVs[0] = FVector2D(OneThird, OneFourth * 3.0f);
+			V60.MatIndex = 0;
+			V61.VertexIndex = 5;
+			V61.UVs[0] = FVector2D(OneThird * 2.0f, OneFourth * 3.0f);
+			V61.MatIndex = 0;
+			V62.VertexIndex = 0;
+			V62.UVs[0] = FVector2D(OneThird, 1.0f);
+			V62.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V60);
+			SkeletalMeshData.Wedges.Add(V61);
+			SkeletalMeshData.Wedges.Add(V62);
+
+			SkeletalMeshImportData::FTriangle T6;
+			T6.WedgeIndex[0] = 18;
+			T6.WedgeIndex[1] = 19;
+			T6.WedgeIndex[2] = 20;
+			T6.MatIndex = 0;
+			T6.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T6);
+		}
+
+		// Trigngle T7
+		{
+			SkeletalMeshImportData::FVertex V70, V71, V72;
+			V70.VertexIndex = 1;
+			V70.UVs[0] = FVector2D(OneThird * 2.0f, 1.0f);
+			V70.MatIndex = 0;
+			V71.VertexIndex = 0;
+			V71.UVs[0] = FVector2D(OneThird, 1.0f);
+			V71.MatIndex = 0;
+			V72.VertexIndex = 5;
+			V72.UVs[0] = FVector2D(OneThird * 2.0f, OneFourth * 3.0f);
+			V72.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V70);
+			SkeletalMeshData.Wedges.Add(V71);
+			SkeletalMeshData.Wedges.Add(V72);
+
+			SkeletalMeshImportData::FTriangle T7;
+			T7.WedgeIndex[0] = 21;
+			T7.WedgeIndex[1] = 22;
+			T7.WedgeIndex[2] = 23;
+			T7.MatIndex = 0;
+			T7.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T7);
+		}
+
+		// Trigngle T8
+		{
+			SkeletalMeshImportData::FVertex V80, V81, V82;
+			V80.VertexIndex = 0;
+			V80.UVs[0] = FVector2D(0.0f, OneFourth);
+			V80.MatIndex = 0;
+			V81.VertexIndex = 2;
+			V81.UVs[0] = FVector2D(OneThird, OneFourth);
+			V81.MatIndex = 0;
+			V82.VertexIndex = 4;
+			V82.UVs[0] = FVector2D(0.0f, OneFourth * 2.0f);
+			V82.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V80);
+			SkeletalMeshData.Wedges.Add(V81);
+			SkeletalMeshData.Wedges.Add(V82);
+
+			SkeletalMeshImportData::FTriangle T8;
+			T8.WedgeIndex[0] = 24;
+			T8.WedgeIndex[1] = 25;
+			T8.WedgeIndex[2] = 26;
+			T8.MatIndex = 0;
+			T8.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T8);
+		}
+
+		// Trigngle T9
+		{
+			SkeletalMeshImportData::FVertex V90, V91, V92;
+			V90.VertexIndex = 6;
+			V90.UVs[0] = FVector2D(OneThird, OneFourth * 2.0f);
+			V90.MatIndex = 0;
+			V91.VertexIndex = 4;
+			V91.UVs[0] = FVector2D(0.0f, OneFourth * 2.0f);
+			V91.MatIndex = 0;
+			V92.VertexIndex = 2;
+			V92.UVs[0] = FVector2D(OneThird, OneFourth);
+			V92.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V90);
+			SkeletalMeshData.Wedges.Add(V91);
+			SkeletalMeshData.Wedges.Add(V92);
+
+			SkeletalMeshImportData::FTriangle T9;
+			T9.WedgeIndex[0] = 27;
+			T9.WedgeIndex[1] = 28;
+			T9.WedgeIndex[2] = 29;
+			T9.MatIndex = 0;
+			T9.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T9);
+		}
+
+		// Trigngle T10
+		{
+			SkeletalMeshImportData::FVertex V100, V101, V102;
+			V100.VertexIndex = 3;
+			V100.UVs[0] = FVector2D(OneThird * 2.0f, OneFourth);
+			V100.MatIndex = 0;
+			V101.VertexIndex = 1;
+			V101.UVs[0] = FVector2D(OneThird * 3.0f, OneFourth);
+			V101.MatIndex = 0;
+			V102.VertexIndex = 7;
+			V102.UVs[0] = FVector2D(OneThird * 2.0f, OneFourth * 2.0f);
+			V102.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V100);
+			SkeletalMeshData.Wedges.Add(V101);
+			SkeletalMeshData.Wedges.Add(V102);
+
+			SkeletalMeshImportData::FTriangle T10;
+			T10.WedgeIndex[0] = 30;
+			T10.WedgeIndex[1] = 31;
+			T10.WedgeIndex[2] = 32;
+			T10.MatIndex = 0;
+			T10.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T10);
+		}
+
+		// Trigngle T11
+		{
+			SkeletalMeshImportData::FVertex V110, V111, V112;
+			V110.VertexIndex = 5;
+			V110.UVs[0] = FVector2D(1.0f, OneFourth * 2.0f);
+			V110.MatIndex = 0;
+			V111.VertexIndex = 7;
+			V111.UVs[0] = FVector2D(OneThird * 2.0f, OneFourth * 2.0f);
+			V111.MatIndex = 0;
+			V112.VertexIndex = 1;
+			V112.UVs[0] = FVector2D(1.0f, OneFourth);
+			V112.MatIndex = 0;
+
+			SkeletalMeshData.Wedges.Add(V110);
+			SkeletalMeshData.Wedges.Add(V111);
+			SkeletalMeshData.Wedges.Add(V112);
+
+			SkeletalMeshImportData::FTriangle T11;
+			T11.WedgeIndex[0] = 33;
+			T11.WedgeIndex[1] = 34;
+			T11.WedgeIndex[2] = 35;
+			T11.MatIndex = 0;
+			T11.SmoothingGroups = 0;
+
+			SkeletalMeshData.Faces.Add(T11);
 		}
 
 		SkeletalMeshImportData::FJointPos J0, J1;
