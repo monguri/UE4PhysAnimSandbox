@@ -114,7 +114,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 #elif 1
 	// 2 bone 1 sphere
 	{
-		const int32 DIVISION = 4; // 180ìxÇÃï™äÑêî
+		const int32 DIVISION = 6; // 180ìxÇÃï™äÑêî
 		const int32 NumPoints = 1 + (DIVISION - 1) * 2 * DIVISION + 1;
 		SkeletalMeshData.Points.Reserve(NumPoints);
 
@@ -228,10 +228,10 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 1.0f);
 			V0.MatIndex = 0;
 			V1.VertexIndex = NumPoints - 1 - DIVISION * 2 + Column;
-			V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f - 1.0f / DIVISION);
+			V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f - 1.0f / DIVISION);
 			V1.MatIndex = 0;
 			V2.VertexIndex = NumPoints - 1 - DIVISION * 2 + (Column + 1) % (2 * DIVISION);
-			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f - 1.0f / DIVISION);
+			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f - 1.0f / DIVISION);
 			V2.MatIndex = 0;
 			SkeletalMeshData.Wedges.Add(V0);
 			SkeletalMeshData.Wedges.Add(V1);
