@@ -132,7 +132,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			{
 				float ColumnSin, ColumnCos = 0.0f;
 				FMath::SinCos(&ColumnSin, &ColumnCos, Column * PI / DIVISION);
-				SkeletalMeshData.Points.Emplace(10.0f * RowCos * ColumnCos + 50.0f, 10.0f * RowCos * ColumnSin, 10.0f * RowSin);
+				SkeletalMeshData.Points.Emplace(10.0f * RowSin * ColumnCos + 50.0f, 10.0f * RowSin * ColumnSin, 10.0f * RowCos);
 			}
 		}
 
@@ -155,8 +155,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION);
 			V2.MatIndex = 0;
 			SkeletalMeshData.Wedges.Add(V0);
-			SkeletalMeshData.Wedges.Add(V1);
-			SkeletalMeshData.Wedges.Add(V2);
+			SkeletalMeshData.Wedges.Add(V2); // ŽžŒv‰ñ‚è‚É‚·‚é‚Ì‚Å
+			SkeletalMeshData.Wedges.Add(V1); // ŽžŒv‰ñ‚è‚É‚·‚é‚Ì‚Å
 
 			SkeletalMeshImportData::FTriangle T;
 			T.WedgeIndex[0] = VertexIndex;
