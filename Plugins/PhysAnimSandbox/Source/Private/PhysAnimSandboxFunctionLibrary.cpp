@@ -171,10 +171,52 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		}
 
 		// –k‹É‚Æ“ì‹É‚ÌŠÔ‚Ìs‚ÌQuad
-		for (int32 Row = 1; Row < DIVISION; ++Row)
+		for (int32 Row = 1; Row < DIVISION - 1; ++Row)
 		{
 			for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
 			{
+				SkeletalMeshImportData::FVertex V0, V1, V2, V3;
+				V0.VertexIndex = (Row - 1) * 2 * DIVISION + Column + 1;
+				V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * Row);
+				V0.MatIndex = 0;
+				V1.VertexIndex = (Row - 1) * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1;
+				V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * Row);
+				V1.MatIndex = 0;
+				V2.VertexIndex = Row * 2 * DIVISION + Column + 1;
+				V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * (Row + 1));
+				V2.MatIndex = 0;
+				V3.VertexIndex = Row * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1;
+				V3.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * (Row + 1));
+				V3.MatIndex = 0;
+
+				SkeletalMeshData.Wedges.Add(V0);
+				SkeletalMeshData.Wedges.Add(V1);
+				SkeletalMeshData.Wedges.Add(V2);
+
+				SkeletalMeshData.Wedges.Add(V3);
+				SkeletalMeshData.Wedges.Add(V2);
+				SkeletalMeshData.Wedges.Add(V1);
+
+				SkeletalMeshImportData::FTriangle T1, T2;
+				T1.WedgeIndex[0] = VertexIndex;
+				T1.WedgeIndex[1] = VertexIndex + 1;
+				T1.WedgeIndex[2] = VertexIndex + 2;
+				T1.MatIndex = 0;
+				T1.SmoothingGroups = 0;
+
+				SkeletalMeshData.Faces.Add(T1);
+
+				VertexIndex += 3;
+
+				T2.WedgeIndex[0] = VertexIndex;
+				T2.WedgeIndex[1] = VertexIndex + 1;
+				T2.WedgeIndex[2] = VertexIndex + 2;
+				T2.MatIndex = 0;
+				T2.SmoothingGroups = 0;
+
+				SkeletalMeshData.Faces.Add(T2);
+
+				VertexIndex += 3;
 			}
 		}
 
@@ -207,14 +249,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			VertexIndex += 3;
 		}
 
-		SkeletalMeshImportData::FTriangle T0;
-		T0.WedgeIndex[0] = 0;
-		T0.WedgeIndex[1] = 1;
-		T0.WedgeIndex[2] = 2;
-		T0.MatIndex = 0;
-		T0.SmoothingGroups = 0;
-
-		SkeletalMeshData.Faces.Add(T0);
 		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
 		J0.Length = 0.0f; // TODO
