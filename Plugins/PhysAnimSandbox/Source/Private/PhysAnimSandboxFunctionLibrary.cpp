@@ -193,10 +193,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 				SkeletalMeshData.Wedges.Add(V1);
 				SkeletalMeshData.Wedges.Add(V2);
 
-				SkeletalMeshData.Wedges.Add(V3);
-				SkeletalMeshData.Wedges.Add(V2);
-				SkeletalMeshData.Wedges.Add(V1);
-
 				SkeletalMeshImportData::FTriangle T1, T2;
 				T1.WedgeIndex[0] = VertexIndex;
 				T1.WedgeIndex[1] = VertexIndex + 1;
@@ -207,6 +203,10 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 				SkeletalMeshData.Faces.Add(T1);
 
 				VertexIndex += 3;
+
+				SkeletalMeshData.Wedges.Add(V3);
+				SkeletalMeshData.Wedges.Add(V2);
+				SkeletalMeshData.Wedges.Add(V1);
 
 				T2.WedgeIndex[0] = VertexIndex;
 				T2.WedgeIndex[1] = VertexIndex + 1;
