@@ -114,7 +114,25 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 #elif 1
 	// 2 bone 1 sphere
 	{
-		const int32 DIVISION = 6; // 180度の分割数
+		// Rootジョイント
+		// スキンウェイトはどのメッシュにも割り当てない
+		SkeletalMeshImportData::FJointPos J0;
+		J0.Transform = FTransform::Identity;
+		J0.Length = 0.0f; // TODO
+		J0.XSize = 5.0f; // TODO
+		J0.YSize = 5.0f; // TODO
+		J0.ZSize = 5.0f; // TODO
+
+		SkeletalMeshImportData::FBone B0, B1;
+		B0.Name = FString("Root");
+		B0.Flags = 0x02; //TODO
+		B0.NumChildren = 1;
+		B0.ParentIndex = INDEX_NONE;
+		B0.BonePos = J0;
+
+		SkeletalMeshData.RefBonesBinary.Add(B0);
+
+		const int32 DIVISION = 8; // 180度の分割数
 		const int32 NumPoints = 1 + (DIVISION - 1) * 2 * DIVISION + 1;
 		SkeletalMeshData.Points.Reserve(NumPoints);
 
@@ -249,31 +267,19 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			VertexIndex += 3;
 		}
 
-		SkeletalMeshImportData::FJointPos J0, J1;
-		J0.Transform = FTransform::Identity;
-		J0.Length = 0.0f; // TODO
-		J0.XSize = 5.0f; // TODO
-		J0.YSize = 5.0f; // TODO
-		J0.ZSize = 5.0f; // TODO
+		SkeletalMeshImportData::FJointPos J1;
 		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
 		J1.Length = 0.0f; // TODO
 		J1.XSize = 5.0f; // TODO
 		J1.YSize = 5.0f; // TODO
 		J1.ZSize = 5.0f; // TODO
 
-		SkeletalMeshImportData::FBone B0, B1;
-		B0.Name = FString("Root");
-		B0.Flags = 0x02; //TODO
-		B0.NumChildren = 1;
-		B0.ParentIndex = INDEX_NONE;
-		B0.BonePos = J0;
 		B1.Name = FString("Child");
 		B1.Flags = 0x02; //TODO
 		B1.NumChildren = 0;
 		B1.ParentIndex = 0;
 		B1.BonePos = J1;
 
-		SkeletalMeshData.RefBonesBinary.Add(B0);
 		SkeletalMeshData.RefBonesBinary.Add(B1);
 
 		SkeletalMeshData.Influences.AddUninitialized(NumPoints);
