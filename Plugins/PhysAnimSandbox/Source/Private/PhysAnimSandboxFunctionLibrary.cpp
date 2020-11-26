@@ -112,9 +112,9 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
 #elif 1
-	// 2 bone 1 sphere
+	// 65 bone 64 sphere
 	{
-		const int32 NUM_SPHERE = 8;
+		const int32 NUM_SPHERE = 64; // 4x4x4
 
 		// Rootジョイント
 		// スキンウェイトはどのメッシュにも割り当てない
@@ -144,9 +144,10 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		for (int32 SphereIndex = 0; SphereIndex < NUM_SPHERE; ++SphereIndex)
 		{
 			int32 PointIndexOffset = SphereIndex * NUM_POINTS_A_SPHERE;
+			const FVector& CenterPos = FVector(-30.0f + (SphereIndex % 4) * 20.0f, -30.0f + (SphereIndex % 16 / 4) * 20.0f, 10.0f + SphereIndex / 16 * 20.0f);
 
 			// 北極の頂点
-			SkeletalMeshData.Points.Emplace(0.0f + 50.0f, 0.0f + 50.0f * SphereIndex, 10.0f);
+			SkeletalMeshData.Points.Emplace(CenterPos + FVector(0.0f, 0.0f, 10.0f));
 
 			// 行ループ
 			for (int32 Row = 1; Row < DIVISION; ++Row)
@@ -159,12 +160,12 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 				{
 					float ColumnSin, ColumnCos = 0.0f;
 					FMath::SinCos(&ColumnSin, &ColumnCos, Column * PI / DIVISION);
-					SkeletalMeshData.Points.Emplace(10.0f * RowSin * ColumnCos + 50.0f, 10.0f * RowSin * ColumnSin + 50.0f * SphereIndex, 10.0f * RowCos);
+					SkeletalMeshData.Points.Emplace(CenterPos + FVector(10.0f * RowSin * ColumnCos, 10.0f * RowSin * ColumnSin, 10.0f * RowCos));
 				}
 			}
 
 			// 南極の頂点
-			SkeletalMeshData.Points.Emplace(0.0f + 50.0, 0.0f + 50.0f * SphereIndex, -10.0f);
+			SkeletalMeshData.Points.Emplace(CenterPos + FVector(0.0f, 0.0f, -10.0f));
 
 			// 北極のTriangle
 			for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
@@ -275,7 +276,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			}
 
 			SkeletalMeshImportData::FJointPos ChildJointPos;
-			ChildJointPos.Transform = FTransform(FVector(0.0f + 50.0f, 0.0f + 50.0f * SphereIndex, 0.0f));
+			ChildJointPos.Transform = FTransform(CenterPos);
 			ChildJointPos.Length = 0.0f; // TODO
 			ChildJointPos.XSize = 5.0f; // TODO
 			ChildJointPos.YSize = 5.0f; // TODO
