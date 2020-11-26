@@ -133,8 +133,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.RefBonesBinary.Add(B0);
 
 		const int32 DIVISION = 8; // 180ìxÇÃï™äÑêî
-		const int32 NumPoints = 1 + (DIVISION - 1) * 2 * DIVISION + 1;
-		SkeletalMeshData.Points.Reserve(NumPoints);
+		const int32 NUM_POINTS_A_SPHERE = 1 + (DIVISION - 1) * 2 * DIVISION + 1;
+		SkeletalMeshData.Points.Reserve(NUM_POINTS_A_SPHERE);
 
 		// ñkã…ÇÃí∏ì_
 		SkeletalMeshData.Points.Emplace(0.0f + 50.0f, 0.0f, 10.0f);
@@ -242,13 +242,13 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
 		{
 			SkeletalMeshImportData::FVertex V0, V1, V2;
-			V0.VertexIndex = NumPoints - 1;
+			V0.VertexIndex = NUM_POINTS_A_SPHERE - 1;
 			V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 1.0f);
 			V0.MatIndex = 0;
-			V1.VertexIndex = NumPoints - 1 - DIVISION * 2 + Column;
+			V1.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + Column;
 			V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f - 1.0f / DIVISION);
 			V1.MatIndex = 0;
-			V2.VertexIndex = NumPoints - 1 - DIVISION * 2 + (Column + 1) % (2 * DIVISION);
+			V2.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + (Column + 1) % (2 * DIVISION);
 			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f - 1.0f / DIVISION);
 			V2.MatIndex = 0;
 			SkeletalMeshData.Wedges.Add(V0);
@@ -282,8 +282,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshData.RefBonesBinary.Add(B1);
 
-		SkeletalMeshData.Influences.AddUninitialized(NumPoints);
-		for (int32 PointIdx = 0; PointIdx < NumPoints; PointIdx++)
+		SkeletalMeshData.Influences.AddUninitialized(NUM_POINTS_A_SPHERE);
+		for (int32 PointIdx = 0; PointIdx < NUM_POINTS_A_SPHERE; PointIdx++)
 		{
 			SkeletalMeshImportData::FRawBoneInfluence I;
 			I.Weight = 1.0f;
@@ -292,8 +292,8 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 			SkeletalMeshData.Influences[PointIdx] = I;
 		}
 
-		SkeletalMeshData.PointToRawMap.AddUninitialized(NumPoints);
-		for (int32 PointIdx = 0; PointIdx < NumPoints; PointIdx++)
+		SkeletalMeshData.PointToRawMap.AddUninitialized(NUM_POINTS_A_SPHERE);
+		for (int32 PointIdx = 0; PointIdx < NUM_POINTS_A_SPHERE; PointIdx++)
 		{
 			SkeletalMeshData.PointToRawMap[PointIdx] = PointIdx;
 		}
