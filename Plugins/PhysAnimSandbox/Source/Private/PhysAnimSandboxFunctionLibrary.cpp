@@ -114,186 +114,195 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 #elif 1
 	// 2 bone 1 sphere
 	{
+		const int32 NUM_SPHERE = 8;
+
 		// Rootジョイント
 		// スキンウェイトはどのメッシュにも割り当てない
-		SkeletalMeshImportData::FJointPos J0;
-		J0.Transform = FTransform::Identity;
-		J0.Length = 0.0f; // TODO
-		J0.XSize = 5.0f; // TODO
-		J0.YSize = 5.0f; // TODO
-		J0.ZSize = 5.0f; // TODO
+		SkeletalMeshImportData::FJointPos RootJointPos;
+		RootJointPos.Transform = FTransform::Identity;
+		RootJointPos.Length = 0.0f; // TODO
+		RootJointPos.XSize = 5.0f; // TODO
+		RootJointPos.YSize = 5.0f; // TODO
+		RootJointPos.ZSize = 5.0f; // TODO
 
-		SkeletalMeshImportData::FBone B0, B1;
-		B0.Name = FString("Root");
-		B0.Flags = 0x02; //TODO
-		B0.NumChildren = 1;
-		B0.ParentIndex = INDEX_NONE;
-		B0.BonePos = J0;
+		SkeletalMeshImportData::FBone RootBone;
+		RootBone.Name = FString("Root");
+		RootBone.Flags = 0x02; //TODO
+		RootBone.NumChildren = NUM_SPHERE;
+		RootBone.ParentIndex = INDEX_NONE;
+		RootBone.BonePos = RootJointPos;
 
-		SkeletalMeshData.RefBonesBinary.Add(B0);
+		SkeletalMeshData.RefBonesBinary.Add(RootBone);
 
 		const int32 DIVISION = 8; // 180度の分割数
 		const int32 NUM_POINTS_A_SPHERE = 1 + (DIVISION - 1) * 2 * DIVISION + 1;
-		SkeletalMeshData.Points.Reserve(NUM_POINTS_A_SPHERE);
 
-		// 北極の頂点
-		SkeletalMeshData.Points.Emplace(0.0f + 50.0f, 0.0f, 10.0f);
-
-		// 行ループ
-		for (int32 Row = 1; Row < DIVISION; ++Row)
-		{
-			float RowSin, RowCos = 0.0f;
-			FMath::SinCos(&RowSin, &RowCos, Row * PI / DIVISION);
-
-			// 列ループ
-			for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
-			{
-				float ColumnSin, ColumnCos = 0.0f;
-				FMath::SinCos(&ColumnSin, &ColumnCos, Column * PI / DIVISION);
-				SkeletalMeshData.Points.Emplace(10.0f * RowSin * ColumnCos + 50.0f, 10.0f * RowSin * ColumnSin, 10.0f * RowCos);
-			}
-		}
-
-		// 南極の頂点
-		SkeletalMeshData.Points.Emplace(0.0f + 50.0f, 0.0f, -10.0f);
+		SkeletalMeshData.Points.Reserve(NUM_SPHERE * NUM_POINTS_A_SPHERE);
 
 		uint32 VertexIndex = 0;
 
-		// 北極のTriangle
-		for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
+		for (int32 SphereIndex = 0; SphereIndex < NUM_SPHERE; ++SphereIndex)
 		{
-			SkeletalMeshImportData::FVertex V0, V1, V2;
-			V0.VertexIndex = 0;
-			V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 0.0f);
-			V0.MatIndex = 0;
-			V1.VertexIndex = Column + 1;
-			V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION);
-			V1.MatIndex = 0;
-			V2.VertexIndex = (Column + 1) % (2 * DIVISION) + 1;
-			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION);
-			V2.MatIndex = 0;
-			SkeletalMeshData.Wedges.Add(V0);
-			SkeletalMeshData.Wedges.Add(V2); // 時計回りにするので
-			SkeletalMeshData.Wedges.Add(V1); // 時計回りにするので
+			int32 PointIndexOffset = SphereIndex * NUM_POINTS_A_SPHERE;
 
-			SkeletalMeshImportData::FTriangle T;
-			T.WedgeIndex[0] = VertexIndex;
-			T.WedgeIndex[1] = VertexIndex + 1;
-			T.WedgeIndex[2] = VertexIndex + 2;
-			T.MatIndex = 0;
-			T.SmoothingGroups = 0;
+			// 北極の頂点
+			SkeletalMeshData.Points.Emplace(0.0f + 50.0f, 0.0f + 50.0f * SphereIndex, 10.0f);
 
-			SkeletalMeshData.Faces.Add(T);
+			// 行ループ
+			for (int32 Row = 1; Row < DIVISION; ++Row)
+			{
+				float RowSin, RowCos = 0.0f;
+				FMath::SinCos(&RowSin, &RowCos, Row * PI / DIVISION);
 
-			VertexIndex += 3;
-		}
+				// 列ループ
+				for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
+				{
+					float ColumnSin, ColumnCos = 0.0f;
+					FMath::SinCos(&ColumnSin, &ColumnCos, Column * PI / DIVISION);
+					SkeletalMeshData.Points.Emplace(10.0f * RowSin * ColumnCos + 50.0f, 10.0f * RowSin * ColumnSin + 50.0f * SphereIndex, 10.0f * RowCos);
+				}
+			}
 
-		// 北極と南極の間の行のQuad
-		for (int32 Row = 1; Row < DIVISION - 1; ++Row)
-		{
+			// 南極の頂点
+			SkeletalMeshData.Points.Emplace(0.0f + 50.0, 0.0f + 50.0f * SphereIndex, -10.0f);
+
+			// 北極のTriangle
 			for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
 			{
-				SkeletalMeshImportData::FVertex V0, V1, V2, V3;
-				V0.VertexIndex = (Row - 1) * 2 * DIVISION + Column + 1;
-				V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * Row);
+				SkeletalMeshImportData::FVertex V0, V1, V2;
+				V0.VertexIndex = 0 + PointIndexOffset;
+				V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 0.0f);
 				V0.MatIndex = 0;
-				V1.VertexIndex = (Row - 1) * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1;
-				V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * Row);
+				V1.VertexIndex = Column + 1 + PointIndexOffset;
+				V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION);
 				V1.MatIndex = 0;
-				V2.VertexIndex = Row * 2 * DIVISION + Column + 1;
-				V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * (Row + 1));
+				V2.VertexIndex = (Column + 1) % (2 * DIVISION) + 1 + PointIndexOffset;
+				V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION);
 				V2.MatIndex = 0;
-				V3.VertexIndex = Row * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1;
-				V3.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * (Row + 1));
-				V3.MatIndex = 0;
+				SkeletalMeshData.Wedges.Add(V0);
+				SkeletalMeshData.Wedges.Add(V2); // 時計回りにするので
+				SkeletalMeshData.Wedges.Add(V1); // 時計回りにするので
 
+				SkeletalMeshImportData::FTriangle T;
+				T.WedgeIndex[0] = VertexIndex;
+				T.WedgeIndex[1] = VertexIndex + 1;
+				T.WedgeIndex[2] = VertexIndex + 2;
+				T.MatIndex = 0;
+				T.SmoothingGroups = 0;
+
+				SkeletalMeshData.Faces.Add(T);
+
+				VertexIndex += 3;
+			}
+
+			// 北極と南極の間の行のQuad
+			for (int32 Row = 1; Row < DIVISION - 1; ++Row)
+			{
+				for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
+				{
+					SkeletalMeshImportData::FVertex V0, V1, V2, V3;
+					V0.VertexIndex = (Row - 1) * 2 * DIVISION + Column + 1 + PointIndexOffset;
+					V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * Row);
+					V0.MatIndex = 0;
+					V1.VertexIndex = (Row - 1) * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1 + SphereIndex * NUM_POINTS_A_SPHERE;
+					V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * Row);
+					V1.MatIndex = 0;
+					V2.VertexIndex = Row * 2 * DIVISION + Column + 1 + PointIndexOffset;
+					V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f / DIVISION * (Row + 1));
+					V2.MatIndex = 0;
+					V3.VertexIndex = Row * 2 * DIVISION + (Column + 1) % (2 * DIVISION) + 1 + PointIndexOffset;
+					V3.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f / DIVISION * (Row + 1));
+					V3.MatIndex = 0;
+
+					SkeletalMeshData.Wedges.Add(V0);
+					SkeletalMeshData.Wedges.Add(V1);
+					SkeletalMeshData.Wedges.Add(V2);
+
+					SkeletalMeshImportData::FTriangle T1, T2;
+					T1.WedgeIndex[0] = VertexIndex;
+					T1.WedgeIndex[1] = VertexIndex + 1;
+					T1.WedgeIndex[2] = VertexIndex + 2;
+					T1.MatIndex = 0;
+					T1.SmoothingGroups = 0;
+
+					SkeletalMeshData.Faces.Add(T1);
+
+					VertexIndex += 3;
+
+					SkeletalMeshData.Wedges.Add(V3);
+					SkeletalMeshData.Wedges.Add(V2);
+					SkeletalMeshData.Wedges.Add(V1);
+
+					T2.WedgeIndex[0] = VertexIndex;
+					T2.WedgeIndex[1] = VertexIndex + 1;
+					T2.WedgeIndex[2] = VertexIndex + 2;
+					T2.MatIndex = 0;
+					T2.SmoothingGroups = 0;
+
+					SkeletalMeshData.Faces.Add(T2);
+
+					VertexIndex += 3;
+				}
+			}
+
+			// 南極のTriangle
+			for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
+			{
+				SkeletalMeshImportData::FVertex V0, V1, V2;
+				V0.VertexIndex = NUM_POINTS_A_SPHERE - 1 + PointIndexOffset;
+				V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 1.0f);
+				V0.MatIndex = 0;
+				V1.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + Column + PointIndexOffset;
+				V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f - 1.0f / DIVISION);
+				V1.MatIndex = 0;
+				V2.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + (Column + 1) % (2 * DIVISION) + PointIndexOffset;
+				V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f - 1.0f / DIVISION);
+				V2.MatIndex = 0;
 				SkeletalMeshData.Wedges.Add(V0);
 				SkeletalMeshData.Wedges.Add(V1);
 				SkeletalMeshData.Wedges.Add(V2);
 
-				SkeletalMeshImportData::FTriangle T1, T2;
-				T1.WedgeIndex[0] = VertexIndex;
-				T1.WedgeIndex[1] = VertexIndex + 1;
-				T1.WedgeIndex[2] = VertexIndex + 2;
-				T1.MatIndex = 0;
-				T1.SmoothingGroups = 0;
+				SkeletalMeshImportData::FTriangle T;
+				T.WedgeIndex[0] = VertexIndex;
+				T.WedgeIndex[1] = VertexIndex + 1;
+				T.WedgeIndex[2] = VertexIndex + 2;
+				T.MatIndex = 0;
+				T.SmoothingGroups = 0;
 
-				SkeletalMeshData.Faces.Add(T1);
-
-				VertexIndex += 3;
-
-				SkeletalMeshData.Wedges.Add(V3);
-				SkeletalMeshData.Wedges.Add(V2);
-				SkeletalMeshData.Wedges.Add(V1);
-
-				T2.WedgeIndex[0] = VertexIndex;
-				T2.WedgeIndex[1] = VertexIndex + 1;
-				T2.WedgeIndex[2] = VertexIndex + 2;
-				T2.MatIndex = 0;
-				T2.SmoothingGroups = 0;
-
-				SkeletalMeshData.Faces.Add(T2);
+				SkeletalMeshData.Faces.Add(T);
 
 				VertexIndex += 3;
 			}
+
+			SkeletalMeshImportData::FJointPos ChildJointPos;
+			ChildJointPos.Transform = FTransform(FVector(0.0f + 50.0f, 0.0f + 50.0f * SphereIndex, 0.0f));
+			ChildJointPos.Length = 0.0f; // TODO
+			ChildJointPos.XSize = 5.0f; // TODO
+			ChildJointPos.YSize = 5.0f; // TODO
+			ChildJointPos.ZSize = 5.0f; // TODO
+
+			SkeletalMeshImportData::FBone ChildBone;
+			ChildBone.Name = FString::Printf(TEXT("Child%d"), SphereIndex);
+			ChildBone.Flags = 0x02; //TODO
+			ChildBone.NumChildren = 0;
+			ChildBone.ParentIndex = 0;
+			ChildBone.BonePos = ChildJointPos;
+
+			SkeletalMeshData.RefBonesBinary.Add(ChildBone);
+
+			SkeletalMeshData.Influences.AddUninitialized(NUM_POINTS_A_SPHERE);
+			for (int32 PointIdx = SphereIndex * NUM_POINTS_A_SPHERE; PointIdx < (SphereIndex + 1) * NUM_POINTS_A_SPHERE; PointIdx++)
+			{
+				SkeletalMeshImportData::FRawBoneInfluence I;
+				I.Weight = 1.0f;
+				I.VertexIndex = PointIdx;
+				I.BoneIndex = SphereIndex + 1;
+				SkeletalMeshData.Influences[PointIdx] = I;
+			}
 		}
 
-		// 南極のTriangle
-		for (int32 Column = 0; Column < 2 * DIVISION; ++Column)
-		{
-			SkeletalMeshImportData::FVertex V0, V1, V2;
-			V0.VertexIndex = NUM_POINTS_A_SPHERE - 1;
-			V0.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 0.5f), 1.0f);
-			V0.MatIndex = 0;
-			V1.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + Column;
-			V1.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * Column, 1.0f - 1.0f / DIVISION);
-			V1.MatIndex = 0;
-			V2.VertexIndex = NUM_POINTS_A_SPHERE - 1 - DIVISION * 2 + (Column + 1) % (2 * DIVISION);
-			V2.UVs[0] = FVector2D(1.0f / (2 * DIVISION) * (Column + 1), 1.0f - 1.0f / DIVISION);
-			V2.MatIndex = 0;
-			SkeletalMeshData.Wedges.Add(V0);
-			SkeletalMeshData.Wedges.Add(V1);
-			SkeletalMeshData.Wedges.Add(V2);
-
-			SkeletalMeshImportData::FTriangle T;
-			T.WedgeIndex[0] = VertexIndex;
-			T.WedgeIndex[1] = VertexIndex + 1;
-			T.WedgeIndex[2] = VertexIndex + 2;
-			T.MatIndex = 0;
-			T.SmoothingGroups = 0;
-
-			SkeletalMeshData.Faces.Add(T);
-
-			VertexIndex += 3;
-		}
-
-		SkeletalMeshImportData::FJointPos J1;
-		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
-		J1.Length = 0.0f; // TODO
-		J1.XSize = 5.0f; // TODO
-		J1.YSize = 5.0f; // TODO
-		J1.ZSize = 5.0f; // TODO
-
-		B1.Name = FString("Child");
-		B1.Flags = 0x02; //TODO
-		B1.NumChildren = 0;
-		B1.ParentIndex = 0;
-		B1.BonePos = J1;
-
-		SkeletalMeshData.RefBonesBinary.Add(B1);
-
-		SkeletalMeshData.Influences.AddUninitialized(NUM_POINTS_A_SPHERE);
-		for (int32 PointIdx = 0; PointIdx < NUM_POINTS_A_SPHERE; PointIdx++)
-		{
-			SkeletalMeshImportData::FRawBoneInfluence I;
-			I.Weight = 1.0f;
-			I.VertexIndex = PointIdx;
-			I.BoneIndex = 1;
-			SkeletalMeshData.Influences[PointIdx] = I;
-		}
-
-		SkeletalMeshData.PointToRawMap.AddUninitialized(NUM_POINTS_A_SPHERE);
-		for (int32 PointIdx = 0; PointIdx < NUM_POINTS_A_SPHERE; PointIdx++)
+		SkeletalMeshData.PointToRawMap.AddUninitialized(NUM_SPHERE * NUM_POINTS_A_SPHERE);
+		for (int32 PointIdx = 0; PointIdx < NUM_SPHERE * NUM_POINTS_A_SPHERE; PointIdx++)
 		{
 			SkeletalMeshData.PointToRawMap[PointIdx] = PointIdx;
 		}
