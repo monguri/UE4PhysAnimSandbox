@@ -37,9 +37,7 @@ public class PhysAnimSandbox : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
                 "AnimGraph",
                 "AnimGraphRuntime",
-                "UnrealEd",
 				"BlueprintGraph",
-				"MeshBuilder",
 			}
 			);
 		
