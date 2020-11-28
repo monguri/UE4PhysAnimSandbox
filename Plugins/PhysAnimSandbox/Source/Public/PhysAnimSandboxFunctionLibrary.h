@@ -12,11 +12,25 @@ class PHYSANIMSANDBOX_API UPhysAnimSandboxFunctionLibrary : public UBlueprintFun
 
 #if WITH_EDITOR
 	/** 
-	 * Create skeletal mesh and skeleton asset.
+	 * Create skeletal mesh of a triangle and skeleton asset.
 	 * @return True if the operation succeeds, check the log for errors if it didn't succeed.
 	 */
 	UFUNCTION(BlueprintCallable)
-	static bool CreateSkeletalMesh();
+	static bool CreateTriangleSkeletalMesh();
+
+	/** 
+	 * Create skeletal mesh of spheres and skeleton asset.
+	 * @return True if the operation succeeds, check the log for errors if it didn't succeed.
+	 */
+	UFUNCTION(BlueprintCallable)
+	static bool CreateSpheresSkeletalMesh();
+
+	/** 
+	 * Create skeletal mesh of a box and skeleton asset.
+	 * @return True if the operation succeeds, check the log for errors if it didn't succeed.
+	 */
+	UFUNCTION(BlueprintCallable)
+	static bool CreateBoxSkeletalMesh();
 #endif
 };
 

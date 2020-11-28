@@ -7,25 +7,11 @@
 #include "Animation/Skeleton.h"
 #include "Factories/FbxSkeletalMeshImportData.h"
 
-#if WITH_EDITOR // USkeletalMesh::Build()が#if WITH_EDITORでの定義なので
-bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
+#if WITH_EDITOR // USkeletalMesh::Build()とFSkeletalMeshImportDataが#if WITH_EDITORでの定義なので
+namespace
 {
-	UPackage* Package = CreatePackage(nullptr, TEXT("/Game/NewSkeletalMesh"));
-	if(!ensure(Package))
-	{
-		return false;
-	}
-
-	USkeletalMesh* SkeletalMesh = NewObject<USkeletalMesh>(Package, FName("NewSkeletalMesh"), EObjectFlags::RF_Public | EObjectFlags::RF_Standalone | EObjectFlags::RF_Transactional);
-	if(!ensure(SkeletalMesh))
-	{
-		return false;
-	}
-
-	FSkeletalMeshImportData SkeletalMeshData;
-
-#if 0
 	// 2 bone 1 triangle
+	void MakeTriangleSkeletalMeshImportData(FSkeletalMeshImportData& SkeletalMeshData)
 	{
 		SkeletalMeshData.Points.Emplace(-10.0f + 50.0f, 10.0f, 0.0f);
 		SkeletalMeshData.Points.Emplace(10.0f + 50.0f, 10.0f, 0.0f);
@@ -111,8 +97,9 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bUseT0AsRefPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
-#elif 1
+
 	// 65 bone 64 sphere
+	void MakeSpheresSkeletalMeshImportData(FSkeletalMeshImportData& SkeletalMeshData)
 	{
 		const int32 NUM_SPHERE = 64; // 4x4x4
 		const float RADIUS = 10.0f;
@@ -316,8 +303,9 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bUseT0AsRefPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
-#else
+
 	// 2 bone 1 box
+	void MakeBoxSkeletalMeshImportData(FSkeletalMeshImportData& SkeletalMeshData)
 	{
 		SkeletalMeshData.Points.Emplace(-10.0f + 50.0f, 10.0f, 10.0f);
 		SkeletalMeshData.Points.Emplace(10.0f + 50.0f, 10.0f, 10.0f);
@@ -732,102 +720,137 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		SkeletalMeshData.bUseT0AsRefPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
-#endif
 
-	FBox BoundingBox(SkeletalMeshData.Points.GetData(), SkeletalMeshData.Points.Num());
-
-	SkeletalMesh->PreEditChange(nullptr);
-	SkeletalMesh->InvalidateDeriveDataCacheGUID();
-
-	FSkeletalMeshModel *ImportedResource = SkeletalMesh->GetImportedModel();
-	check(ImportedResource->LODModels.Num() == 0);
-	ImportedResource->LODModels.Empty();
-	ImportedResource->LODModels.Add(new FSkeletalMeshLODModel());
-	const int32 ImportLODModelIndex = 0;
-	FSkeletalMeshLODModel& LODModel = ImportedResource->LODModels[ImportLODModelIndex];
-
-	ProcessImportMeshMaterials(SkeletalMesh->Materials, SkeletalMeshData);
-
-	int32 SkeletalDepth = 1;
-	const USkeleton* ExistingSkeleton = nullptr;
-	if (!ProcessImportMeshSkeleton(ExistingSkeleton, SkeletalMesh->RefSkeleton, SkeletalDepth, SkeletalMeshData))
+	bool CreateSkeletalMesh(FSkeletalMeshImportData& SkeletalMeshData)
 	{
-		SkeletalMesh->ClearFlags(RF_Standalone);
-		SkeletalMesh->Rename(NULL, GetTransientPackage(), REN_DontCreateRedirectors);
-		return false;
+		UPackage* Package = CreatePackage(nullptr, TEXT("/Game/NewSkeletalMesh"));
+		if(!ensure(Package))
+		{
+			return false;
+		}
+
+		USkeletalMesh* SkeletalMesh = NewObject<USkeletalMesh>(Package, FName("NewSkeletalMesh"), EObjectFlags::RF_Public | EObjectFlags::RF_Standalone | EObjectFlags::RF_Transactional);
+		if(!ensure(SkeletalMesh))
+		{
+			return false;
+		}
+
+		FBox BoundingBox(SkeletalMeshData.Points.GetData(), SkeletalMeshData.Points.Num());
+
+		SkeletalMesh->PreEditChange(nullptr);
+		SkeletalMesh->InvalidateDeriveDataCacheGUID();
+
+		FSkeletalMeshModel *ImportedResource = SkeletalMesh->GetImportedModel();
+		check(ImportedResource->LODModels.Num() == 0);
+		ImportedResource->LODModels.Empty();
+		ImportedResource->LODModels.Add(new FSkeletalMeshLODModel());
+		const int32 ImportLODModelIndex = 0;
+		FSkeletalMeshLODModel& LODModel = ImportedResource->LODModels[ImportLODModelIndex];
+
+		ProcessImportMeshMaterials(SkeletalMesh->Materials, SkeletalMeshData);
+
+		int32 SkeletalDepth = 1;
+		const USkeleton* ExistingSkeleton = nullptr;
+		if (!ProcessImportMeshSkeleton(ExistingSkeleton, SkeletalMesh->RefSkeleton, SkeletalDepth, SkeletalMeshData))
+		{
+			SkeletalMesh->ClearFlags(RF_Standalone);
+			SkeletalMesh->Rename(NULL, GetTransientPackage(), REN_DontCreateRedirectors);
+			return false;
+		}
+
+		ProcessImportMeshInfluences(SkeletalMeshData);
+
+		SkeletalMesh->SaveLODImportedData(ImportLODModelIndex, SkeletalMeshData);
+		SkeletalMesh->SetLODImportedDataVersions(ImportLODModelIndex, ESkeletalMeshGeoImportVersions::LatestVersion, ESkeletalMeshSkinningImportVersions::LatestVersion);
+
+		SkeletalMesh->ResetLODInfo();
+		FSkeletalMeshLODInfo& NewLODInfo = SkeletalMesh->AddLODInfo();
+		NewLODInfo.ReductionSettings.NumOfTrianglesPercentage = 1.0f;
+		NewLODInfo.ReductionSettings.NumOfVertPercentage = 1.0f;
+		NewLODInfo.ReductionSettings.MaxDeviationPercentage = 0.0f;
+		NewLODInfo.LODHysteresis = 0.02f;
+
+		SkeletalMesh->SetImportedBounds(FBoxSphereBounds(BoundingBox));
+
+		SkeletalMesh->bHasVertexColors = SkeletalMeshData.bHasVertexColors;
+		SkeletalMesh->VertexColorGuid = FGuid();
+
+		LODModel.NumTexCoords = FMath::Max<uint32>(1, SkeletalMeshData.NumTexCoords);
+
+		FSkeletalMeshBuildSettings BuildOptions;
+		BuildOptions.bBuildAdjacencyBuffer = true;
+		BuildOptions.bRecomputeNormals = true;
+		BuildOptions.bRecomputeTangents = true;
+		BuildOptions.bUseMikkTSpace = true;
+		BuildOptions.bComputeWeightedNormals = true;
+		BuildOptions.bRemoveDegenerates = true;
+		BuildOptions.ThresholdPosition = 0.0f;
+		BuildOptions.ThresholdTangentNormal = 0.0f;
+		BuildOptions.ThresholdUV = 0.0f;
+		BuildOptions.MorphThresholdPosition = 0.0f;
+
+		check(SkeletalMesh->GetLODInfo(ImportLODModelIndex) != nullptr);
+		SkeletalMesh->GetLODInfo(ImportLODModelIndex)->BuildSettings = BuildOptions;
+		bool bRegenDepLODs = false;
+		bool Success = FSkeletalMeshBuilder().Build(SkeletalMesh, ImportLODModelIndex, bRegenDepLODs);
+		if (!Success)
+		{
+			SkeletalMesh->MarkPendingKill();
+			return false;
+		}
+
+		SkeletalMesh->CalculateInvRefMatrices();
+		// PhysicsAssetを作らなくても、SkeletalMeshRenderDataを作らないと描画できないので必要
+		SkeletalMesh->Build();
+
+		// AssetImportData作成は省略
+
+		UPackage* SkeltonPackage = CreatePackage(nullptr, TEXT("/Game/NewSkeleton"));
+		if(!ensure(SkeltonPackage))
+		{
+			return false;
+		}
+
+		USkeleton* Skeleton = NewObject<USkeleton>(SkeltonPackage, FName("NewSkeleton"), EObjectFlags::RF_Public | EObjectFlags::RF_Standalone | EObjectFlags::RF_Transactional);
+		if (Skeleton == nullptr)
+		{
+			return false;
+		}
+
+		if (!Skeleton->MergeAllBonesToBoneTree(SkeletalMesh))
+		{
+			return false;
+		}
+
+		SkeletalMesh->Skeleton = Skeleton;
+
+		// PhysicsAsset作成は省略
+		SkeletalMesh->MarkPackageDirty();
+
+		SkeletalMesh->PhysicsAsset = nullptr;
+		return true;
 	}
+}
 
-	ProcessImportMeshInfluences(SkeletalMeshData);
+bool UPhysAnimSandboxFunctionLibrary::CreateTriangleSkeletalMesh()
+{
+	FSkeletalMeshImportData SkeletalMeshData;
+	MakeTriangleSkeletalMeshImportData(SkeletalMeshData);
+	return CreateSkeletalMesh(SkeletalMeshData);
+}
 
-	SkeletalMesh->SaveLODImportedData(ImportLODModelIndex, SkeletalMeshData);
-	SkeletalMesh->SetLODImportedDataVersions(ImportLODModelIndex, ESkeletalMeshGeoImportVersions::LatestVersion, ESkeletalMeshSkinningImportVersions::LatestVersion);
+bool UPhysAnimSandboxFunctionLibrary::CreateSpheresSkeletalMesh()
+{
+	FSkeletalMeshImportData SkeletalMeshData;
+	MakeSpheresSkeletalMeshImportData(SkeletalMeshData);
+	return CreateSkeletalMesh(SkeletalMeshData);
+}
 
-	SkeletalMesh->ResetLODInfo();
-	FSkeletalMeshLODInfo& NewLODInfo = SkeletalMesh->AddLODInfo();
-	NewLODInfo.ReductionSettings.NumOfTrianglesPercentage = 1.0f;
-	NewLODInfo.ReductionSettings.NumOfVertPercentage = 1.0f;
-	NewLODInfo.ReductionSettings.MaxDeviationPercentage = 0.0f;
-	NewLODInfo.LODHysteresis = 0.02f;
-
-	SkeletalMesh->SetImportedBounds(FBoxSphereBounds(BoundingBox));
-
-	SkeletalMesh->bHasVertexColors = SkeletalMeshData.bHasVertexColors;
-	SkeletalMesh->VertexColorGuid = FGuid();
-
-	LODModel.NumTexCoords = FMath::Max<uint32>(1, SkeletalMeshData.NumTexCoords);
-
-	FSkeletalMeshBuildSettings BuildOptions;
-	BuildOptions.bBuildAdjacencyBuffer = true;
-	BuildOptions.bRecomputeNormals = true;
-	BuildOptions.bRecomputeTangents = true;
-	BuildOptions.bUseMikkTSpace = true;
-	BuildOptions.bComputeWeightedNormals = true;
-	BuildOptions.bRemoveDegenerates = true;
-	BuildOptions.ThresholdPosition = 0.0f;
-	BuildOptions.ThresholdTangentNormal = 0.0f;
-	BuildOptions.ThresholdUV = 0.0f;
-	BuildOptions.MorphThresholdPosition = 0.0f;
-
-	check(SkeletalMesh->GetLODInfo(ImportLODModelIndex) != nullptr);
-	SkeletalMesh->GetLODInfo(ImportLODModelIndex)->BuildSettings = BuildOptions;
-	bool bRegenDepLODs = false;
-	bool Success = FSkeletalMeshBuilder().Build(SkeletalMesh, ImportLODModelIndex, bRegenDepLODs);
-	if (!Success)
-	{
-		SkeletalMesh->MarkPendingKill();
-		return false;
-	}
-
-	SkeletalMesh->CalculateInvRefMatrices();
-	// PhysicsAssetを作らなくても、SkeletalMeshRenderDataを作らないと描画できないので必要
-	SkeletalMesh->Build();
-
-	// AssetImportData作成は省略
-
-	UPackage* SkeltonPackage = CreatePackage(nullptr, TEXT("/Game/NewSkeleton"));
-	if(!ensure(SkeltonPackage))
-	{
-		return false;
-	}
-
-	USkeleton* Skeleton = NewObject<USkeleton>(SkeltonPackage, FName("NewSkeleton"), EObjectFlags::RF_Public | EObjectFlags::RF_Standalone | EObjectFlags::RF_Transactional);
-	if (Skeleton == nullptr)
-	{
-		return false;
-	}
-
-	if (!Skeleton->MergeAllBonesToBoneTree(SkeletalMesh))
-	{
-		return false;
-	}
-
-	SkeletalMesh->Skeleton = Skeleton;
-
-	// PhysicsAsset作成は省略
-	SkeletalMesh->MarkPackageDirty();
-
-	SkeletalMesh->PhysicsAsset = nullptr;
-	return true;
+bool UPhysAnimSandboxFunctionLibrary::CreateBoxSkeletalMesh()
+{
+	FSkeletalMeshImportData SkeletalMeshData;
+	MakeBoxSkeletalMeshImportData(SkeletalMeshData);
+	return CreateSkeletalMesh(SkeletalMeshData);
 }
 #endif // WITH_EDITOR
 
