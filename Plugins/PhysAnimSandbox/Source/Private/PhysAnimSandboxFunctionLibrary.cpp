@@ -104,7 +104,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		}
 
 		SkeletalMeshData.NumTexCoords = 1;
-		SkeletalMeshData.MaxMaterialIndex = 1; // TODO
+		SkeletalMeshData.MaxMaterialIndex = 0;
 		SkeletalMeshData.bHasVertexColors = false;
 		SkeletalMeshData.bHasNormals = false;
 		SkeletalMeshData.bHasTangents = false;
@@ -307,6 +307,14 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		{
 			SkeletalMeshData.PointToRawMap[PointIdx] = PointIdx;
 		}
+
+		SkeletalMeshData.NumTexCoords = 1;
+		SkeletalMeshData.MaxMaterialIndex = 0;
+		SkeletalMeshData.bHasVertexColors = false;
+		SkeletalMeshData.bHasNormals = false;
+		SkeletalMeshData.bHasTangents = false;
+		SkeletalMeshData.bUseT0AsRefPose = false; // こんなのあったんだな。クロスの初期化に使えそう
+		SkeletalMeshData.bDiffPose = false; // こんなのあったんだな。クロスの初期化に使えそう
 	}
 #else
 	// 2 bone 1 box
@@ -717,7 +725,7 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		}
 
 		SkeletalMeshData.NumTexCoords = 1;
-		SkeletalMeshData.MaxMaterialIndex = 1; // TODO
+		SkeletalMeshData.MaxMaterialIndex = 0;
 		SkeletalMeshData.bHasVertexColors = false;
 		SkeletalMeshData.bHasNormals = false;
 		SkeletalMeshData.bHasTangents = false;
