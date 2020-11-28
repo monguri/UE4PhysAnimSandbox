@@ -780,9 +780,9 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	BuildOptions.bBuildAdjacencyBuffer = true;
 	BuildOptions.bRecomputeNormals = true;
 	BuildOptions.bRecomputeTangents = true;
-	BuildOptions.bUseMikkTSpace = true; //TODO
-	BuildOptions.bComputeWeightedNormals = true; //TODO
-	BuildOptions.bRemoveDegenerates = true; //TODO
+	BuildOptions.bUseMikkTSpace = true;
+	BuildOptions.bComputeWeightedNormals = true;
+	BuildOptions.bRemoveDegenerates = true;
 	BuildOptions.ThresholdPosition = 0.0f;
 	BuildOptions.ThresholdTangentNormal = 0.0f;
 	BuildOptions.ThresholdUV = 0.0f;
@@ -790,7 +790,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 	check(SkeletalMesh->GetLODInfo(ImportLODModelIndex) != nullptr);
 	SkeletalMesh->GetLODInfo(ImportLODModelIndex)->BuildSettings = BuildOptions;
-	// TODO
 	bool bRegenDepLODs = false;
 	bool Success = FSkeletalMeshBuilder().Build(SkeletalMesh, ImportLODModelIndex, bRegenDepLODs);
 	if (!Success)
@@ -821,9 +820,6 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 	{
 		return false;
 	}
-
-	// TODO:‚¢‚é‚©H
-	Skeleton->UpdateReferencePoseFromMesh(SkeletalMesh);
 
 	SkeletalMesh->Skeleton = Skeleton;
 
