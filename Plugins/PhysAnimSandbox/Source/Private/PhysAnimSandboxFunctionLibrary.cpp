@@ -57,15 +57,15 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
-		J0.Length = 0.0f; // TODO
-		J0.XSize = 5.0f; // TODO
-		J0.YSize = 5.0f; // TODO
-		J0.ZSize = 5.0f; // TODO
+		J0.Length = 1.0f;
+		J0.XSize = 100.0f;
+		J0.YSize = 100.0f;
+		J0.ZSize = 100.0f;
 		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
-		J1.Length = 0.0f; // TODO
-		J1.XSize = 5.0f; // TODO
-		J1.YSize = 5.0f; // TODO
-		J1.ZSize = 5.0f; // TODO
+		J1.Length = 1.0f;
+		J1.XSize = 100.0f;
+		J1.YSize = 100.0f;
+		J1.ZSize = 100.0f;
 
 		SkeletalMeshImportData::FBone B0, B1;
 		B0.Name = FString("Root");
@@ -123,10 +123,10 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		// スキンウェイトはどのメッシュにも割り当てない
 		SkeletalMeshImportData::FJointPos RootJointPos;
 		RootJointPos.Transform = FTransform::Identity;
-		RootJointPos.Length = 0.0f; // TODO
-		RootJointPos.XSize = 5.0f; // TODO
-		RootJointPos.YSize = 5.0f; // TODO
-		RootJointPos.ZSize = 5.0f; // TODO
+		RootJointPos.Length = 1.0f;
+		RootJointPos.XSize = 100.0f;
+		RootJointPos.YSize = 100.0f;
+		RootJointPos.ZSize = 100.0f;
 
 		SkeletalMeshImportData::FBone RootBone;
 		RootBone.Name = FString("Root");
@@ -277,10 +277,10 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 			SkeletalMeshImportData::FJointPos ChildJointPos;
 			ChildJointPos.Transform = FTransform(CenterPos);
-			ChildJointPos.Length = 0.0f; // TODO
-			ChildJointPos.XSize = 5.0f; // TODO
-			ChildJointPos.YSize = 5.0f; // TODO
-			ChildJointPos.ZSize = 5.0f; // TODO
+			ChildJointPos.Length = 1.0f;
+			ChildJointPos.XSize = 100.0f;
+			ChildJointPos.YSize = 100.0f;
+			ChildJointPos.ZSize = 100.0f;
 
 			SkeletalMeshImportData::FBone ChildBone;
 			ChildBone.Name = FString::Printf(TEXT("Child%d"), SphereIndex);
@@ -650,15 +650,15 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
-		J0.Length = 0.0f; // TODO
-		J0.XSize = 5.0f; // TODO
-		J0.YSize = 5.0f; // TODO
-		J0.ZSize = 5.0f; // TODO
+		J0.Length = 1.0f;
+		J0.XSize = 100.0f;
+		J0.YSize = 100.0f;
+		J0.ZSize = 100.0f;
 		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
-		J1.Length = 0.0f; // TODO
-		J1.XSize = 5.0f; // TODO
-		J1.YSize = 5.0f; // TODO
-		J1.ZSize = 5.0f; // TODO
+		J1.Length = 1.0f;
+		J1.XSize = 100.0f;
+		J1.YSize = 100.0f;
+		J1.ZSize = 100.0f;
 
 		SkeletalMeshImportData::FBone B0, B1;
 		B0.Name = FString("Root");
