@@ -57,24 +57,24 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
-		J0.Length = 1.0f;
-		J0.XSize = 100.0f;
-		J0.YSize = 100.0f;
-		J0.ZSize = 100.0f;
+		J0.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
-		J1.Length = 1.0f;
-		J1.XSize = 100.0f;
-		J1.YSize = 100.0f;
-		J1.ZSize = 100.0f;
+		J1.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 
 		SkeletalMeshImportData::FBone B0, B1;
 		B0.Name = FString("Root");
-		B0.Flags = 0x02; //TODO
+		B0.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 		B0.NumChildren = 1;
 		B0.ParentIndex = INDEX_NONE;
 		B0.BonePos = J0;
 		B1.Name = FString("Child");
-		B1.Flags = 0x02; //TODO
+		B1.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 		B1.NumChildren = 0;
 		B1.ParentIndex = 0;
 		B1.BonePos = J1;
@@ -123,14 +123,14 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 		// スキンウェイトはどのメッシュにも割り当てない
 		SkeletalMeshImportData::FJointPos RootJointPos;
 		RootJointPos.Transform = FTransform::Identity;
-		RootJointPos.Length = 1.0f;
-		RootJointPos.XSize = 100.0f;
-		RootJointPos.YSize = 100.0f;
-		RootJointPos.ZSize = 100.0f;
+		RootJointPos.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		RootJointPos.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		RootJointPos.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		RootJointPos.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 
 		SkeletalMeshImportData::FBone RootBone;
 		RootBone.Name = FString("Root");
-		RootBone.Flags = 0x02; //TODO
+		RootBone.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 		RootBone.NumChildren = NUM_SPHERE;
 		RootBone.ParentIndex = INDEX_NONE;
 		RootBone.BonePos = RootJointPos;
@@ -277,14 +277,14 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 			SkeletalMeshImportData::FJointPos ChildJointPos;
 			ChildJointPos.Transform = FTransform(CenterPos);
-			ChildJointPos.Length = 1.0f;
-			ChildJointPos.XSize = 100.0f;
-			ChildJointPos.YSize = 100.0f;
-			ChildJointPos.ZSize = 100.0f;
+			ChildJointPos.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+			ChildJointPos.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+			ChildJointPos.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+			ChildJointPos.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 
 			SkeletalMeshImportData::FBone ChildBone;
 			ChildBone.Name = FString::Printf(TEXT("Child%d"), SphereIndex);
-			ChildBone.Flags = 0x02; //TODO
+			ChildBone.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 			ChildBone.NumChildren = 0;
 			ChildBone.ParentIndex = 0;
 			ChildBone.BonePos = ChildJointPos;
@@ -650,24 +650,24 @@ bool UPhysAnimSandboxFunctionLibrary::CreateSkeletalMesh()
 
 		SkeletalMeshImportData::FJointPos J0, J1;
 		J0.Transform = FTransform::Identity;
-		J0.Length = 1.0f;
-		J0.XSize = 100.0f;
-		J0.YSize = 100.0f;
-		J0.ZSize = 100.0f;
+		J0.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J0.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 		J1.Transform = FTransform(FVector(50.0f, 0.0f, 0.0f));
-		J1.Length = 1.0f;
-		J1.XSize = 100.0f;
-		J1.YSize = 100.0f;
-		J1.ZSize = 100.0f;
+		J1.Length = 1.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.XSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.YSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
+		J1.ZSize = 100.0f; // 現状使われてないのでUSDSkeletalDataConversion.cppと同じ値をいれておく
 
 		SkeletalMeshImportData::FBone B0, B1;
 		B0.Name = FString("Root");
-		B0.Flags = 0x02; //TODO
+		B0.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 		B0.NumChildren = 1;
 		B0.ParentIndex = INDEX_NONE;
 		B0.BonePos = J0;
 		B1.Name = FString("Child");
-		B1.Flags = 0x02; //TODO
+		B1.Flags = 0x02; // 現状使われてないので指定通りの値をいれておく
 		B1.NumChildren = 0;
 		B1.ParentIndex = 0;
 		B1.BonePos = J1;
