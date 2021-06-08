@@ -38,6 +38,7 @@ public class PhysAnimSandbox : ModuleRules
                 "AnimGraph",
                 "AnimGraphRuntime",
 				"BlueprintGraph",
+				"Niagara",
 			}
 			);
 		
