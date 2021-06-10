@@ -51,25 +51,13 @@ private:
 	int32 NumThreads = 4;
 
 	UPROPERTY(EditAnywhere)
-	bool bUseNeighborGrid3D = true;
-
-	UPROPERTY(EditAnywhere)
-	bool bUseWallProjection = true;
-
-	UPROPERTY(EditAnywhere)
-	int32 NumParticles = 1000;
+	int32 NumRigidBodies = 1;
 
 	UPROPERTY(EditAnywhere)
 	int32 NumIterations = 4;
 
 	UPROPERTY(EditAnywhere)
 	float FrameRate = 60.0f;
-
-	UPROPERTY(EditAnywhere)
-	FBox WallBox = FBox(FVector(-4.5f, -4.5f, -4.5f), FVector(4.5f, 4.5f, 4.5f));
-
-	UPROPERTY(EditAnywhere)
-	float WallProjectionAlpha = 0.2f;
 
 	UPROPERTY(EditAnywhere)
 	float WallStiffness = 3000.0f;
@@ -80,65 +68,16 @@ private:
 	UPROPERTY(EditAnywhere)
 	float Mass = 0.08f;
 
-	UPROPERTY(EditAnywhere)
-	float SmoothLength = 0.5f;
-
-	UPROPERTY(EditAnywhere)
-	float RestDensity = 4.0f;
-
-	UPROPERTY(EditAnywhere)
-	float PressureStiffness = 0.57f;
-
-	UPROPERTY(EditAnywhere)
-	float Viscosity = 3.0f;
-
-	UPROPERTY(EditAnywhere)
-	float InitPosRadius = 4.0f;
-
-	UPROPERTY(EditAnywhere)
-	float MaxVelocity = 60.0f; // 1.0cm by one frame of 60FPS
-
-	UPROPERTY(EditAnywhere)
-	int32 NumCellsX = 10;
-
-	UPROPERTY(EditAnywhere)
-	int32 NumCellsY = 10;
-
-	UPROPERTY(EditAnywhere)
-	int32 NumCellsZ = 10;
-
-	UPROPERTY(EditAnywhere)
-	int32 MaxNeighborsPerCell = 8;
-
-	UPROPERTY(EditAnywhere)
-	FVector WorldBBoxSize = FVector(10.0f, 10.0f, 10.0f);
-
 private:
 	void Simulate(float DeltaSeconds);
-	void CalculateDensity(int32 ParticleIdx, int32 AnotherParticleIdx);
-	void CalculatePressure(int32 ParticleIdx);
-	void ApplyPressure(int32 ParticleIdx, int32 AnotherParticleIdx);
-	void ApplyViscosity(int32 ParticleIdx, int32 AnotherParticleIdx, float DeltaSeconds);
 	void ApplyWallPenalty(int32 ParticleIdx);
 	void Integrate(int32 ParticleIdx, float DeltaSeconds);
-	void ApplyWallProjection(int32 ParticleIdx, float DeltaSeconds);
 
 private:
 	TArray<FVector> Positions;
-	TArray<FVector> PrevPositions;
+	TArray<FQuat> Orientations;
 	TArray<FLinearColor> Colors;
-	TArray<FVector> Velocities;
-	// 加速度は毎フレーム計算するのでフレーム間のひきつぎはないのだが、使用メモリやTArrayの生成負荷をおさえるために
-	// 使いまわしている
-	TArray<FVector> Accelerations;
-	TArray<float> Densities;
-	TArray<float> Pressures;
-	float DensityCoef = 0.0f;
-	float GradientPressureCoef = 0.0f;
-	float LaplacianViscosityCoef = 0.0f;
-	float SmoothLenSq = 0.0f;
-	int32 NumThreadParticles = 0.0f;
-	FTransform LocalToUnitTransform;
+	int32 NumThreadParticles = 0;
 
 public:
 	/** Returns NiagaraComponent subobject **/
