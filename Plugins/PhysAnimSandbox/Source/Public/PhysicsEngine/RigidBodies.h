@@ -51,22 +51,28 @@ private:
 	int32 NumThreads = 4;
 
 	UPROPERTY(EditAnywhere)
-	int32 NumRigidBodies = 1;
-
-	UPROPERTY(EditAnywhere)
 	int32 NumIterations = 4;
 
 	UPROPERTY(EditAnywhere)
 	float FrameRate = 60.0f;
 
 	UPROPERTY(EditAnywhere)
-	float WallStiffness = 3000.0f;
+	float Gravity = -981.0f;
 
 	UPROPERTY(EditAnywhere)
-	float Gravity = -9.81f;
+	int32 NumRigidBodies = 1;
 
 	UPROPERTY(EditAnywhere)
-	float Mass = 0.08f;
+	float Mass = 0.1f;
+
+	UPROPERTY(EditAnywhere)
+	FVector CubeScale = FVector(0.1f, 0.1f, 0.1f); // for 1m x 1m x 1m cube.
+
+	UPROPERTY(EditAnywhere)
+	FVector FloorScale = FVector(10.0f, 10.0f, 0.5f); // for 1m x 1m x 1m cube.
+
+	UPROPERTY(EditAnywhere)
+	FVector FloorPosition = FVector(0.0f, 0.0f, -25.0f);
 
 private:
 	void Simulate(float DeltaSeconds);
@@ -76,6 +82,7 @@ private:
 private:
 	TArray<FVector> Positions;
 	TArray<FQuat> Orientations;
+	TArray<FVector> Scales;
 	TArray<FLinearColor> Colors;
 	int32 NumThreadParticles = 0;
 

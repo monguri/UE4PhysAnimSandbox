@@ -50,13 +50,17 @@ void ARigidBodies::BeginPlay()
 
 	Positions.Add(FVector(0.0f, 0.0f, 10.0f));
 	Orientations.Add(FQuat::Identity);
+	Scales.Add(CubeScale);
 	Colors.Add(FLinearColor::White);
 
 	// Tick()で設定しても、レベルにNiagaraSystemが最初から配置されていると、初回のスポーンでは配列は初期値を使ってしまい
 	//間に合わないのでBeginPlay()でも設定する
-	NiagaraComponent->SetNiagaraVariableInt("NumRigidBodies", NumRigidBodies);
+	NiagaraComponent->SetVariableInt(FName("NumRigidBodies"), NumRigidBodies);
+	NiagaraComponent->SetVariableVec3(FName("FloorScale"), FloorScale);
+	NiagaraComponent->SetVariableVec3(FName("FloorPosition"), FloorPosition);
 	SetNiagaraArrayVector(NiagaraComponent, FName("Positions"), Positions);
 	SetNiagaraArrayQuat(NiagaraComponent, FName("Orientations"), Orientations);
+	SetNiagaraArrayVector(NiagaraComponent, FName("Scales"), Scales);
 	SetNiagaraArrayColor(NiagaraComponent, FName("Colors"), Colors);
 }
 
@@ -75,8 +79,9 @@ void ARigidBodies::Tick(float DeltaSeconds)
 		}
 	}
 
-	NiagaraComponent->SetNiagaraVariableInt("NumRigidBodies", NumRigidBodies);
+	NiagaraComponent->SetVariableInt(FName("NumRigidBodies"), NumRigidBodies);
 	SetNiagaraArrayVector(NiagaraComponent, FName("Positions"), Positions);
+	SetNiagaraArrayQuat(NiagaraComponent, FName("Orientations"), Orientations);
 
 	NumThreadParticles = (NumRigidBodies + NumThreads - 1) / NumThreads;
 }
