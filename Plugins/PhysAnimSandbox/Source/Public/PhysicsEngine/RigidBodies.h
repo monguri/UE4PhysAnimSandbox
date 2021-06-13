@@ -92,6 +92,7 @@ private:
 	TArray<FVector> Scales;
 	TArray<FLinearColor> Colors;
 	TArray<FVector> LinearVelocities;
+	TArray<FVector> AngularVelocities;
 
 	int32 NumThreadParticles = 0;
 

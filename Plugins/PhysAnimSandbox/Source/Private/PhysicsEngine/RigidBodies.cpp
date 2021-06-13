@@ -70,6 +70,7 @@ void ARigidBodies::BeginPlay()
 	Scales.SetNum(NumRigidBodies);
 	Colors.SetNum(NumRigidBodies);
 	LinearVelocities.SetNum(NumRigidBodies);
+	AngularVelocities.SetNum(NumRigidBodies);
 
 	// InitPosRadius半径の球内にランダムに配置
 	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
@@ -85,6 +86,7 @@ void ARigidBodies::BeginPlay()
 		Scales[i] = CubeScale;
 		Colors[i] = FLinearColor::White;
 		LinearVelocities[i] = FVector::ZeroVector;
+		AngularVelocities[i] = FVector::ZeroVector;
 	}
 
 	// Tick()で設定しても、レベルにNiagaraSystemが最初から配置されていると、初回のスポーンでは配列は初期値を使ってしまい
@@ -141,9 +143,13 @@ void ARigidBodies::Integrate(int32 RBIdx, float DeltaSeconds)
 	LinearVelocities[RBIdx] += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
 	// TODO:仮。発散しないように
 	LinearVelocities[RBIdx].Z = FMath::Max(LinearVelocities[RBIdx].Z, -1000.0f);
+
 	Positions[RBIdx] += LinearVelocities[RBIdx] * DeltaSeconds;
 	// TODO:仮。発散しないように
 	Positions[RBIdx].Z = FMath::Max(Positions[RBIdx].Z, 25.0f);
+
+	const FQuat& OrientationDifferential = FQuat(AngularVelocities[RBIdx].X, AngularVelocities[RBIdx].Y, AngularVelocities[RBIdx].Z, 0.0f) * Orientations[RBIdx] * 0.5f;
+	Orientations[RBIdx] = (Orientations[RBIdx] + OrientationDifferential * DeltaSeconds).GetNormalized();
 }
 
 ARigidBodies::ARigidBodies()
