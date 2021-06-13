@@ -65,12 +65,16 @@ void ARigidBodies::BeginPlay()
 {
 	Super::BeginPlay();
 
+	NumThreadParticles = (NumRigidBodies + NumThreads - 1) / NumThreads;
+	NumPairs = (NumRigidBodies * (NumRigidBodies + 1)) / 2; //TODO: 総当たり
+
 	Positions.SetNum(NumRigidBodies);
 	Orientations.SetNum(NumRigidBodies);
 	Scales.SetNum(NumRigidBodies);
 	Colors.SetNum(NumRigidBodies);
 	LinearVelocities.SetNum(NumRigidBodies);
 	AngularVelocities.SetNum(NumRigidBodies);
+	ContactPairs.Reserve(NumPairs); // コンタクトペアは最大でも総当たりペア数
 
 	// InitPosRadius半径の球内にランダムに配置
 	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
@@ -115,17 +119,19 @@ void ARigidBodies::Tick(float DeltaSeconds)
 		}
 	}
 
-	NiagaraComponent->SetVariableInt(FName("NumRigidBodies"), NumRigidBodies);
 	SetNiagaraArrayVector(NiagaraComponent, FName("Positions"), Positions);
-	SetNiagaraArrayQuat(NiagaraComponent, FName("Orientations"), Orientations);
-	SetNiagaraArrayVector(NiagaraComponent, FName("Scales"), Scales);
-	SetNiagaraArrayColor(NiagaraComponent, FName("Colors"), Colors);
-
-	NumThreadParticles = (NumRigidBodies + NumThreads - 1) / NumThreads;
 }
 
 void ARigidBodies::Simulate(float DeltaSeconds)
 {
+	ContactPairs.Reset();
+
+	//TODO: コンタクトペア配列にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
+	DetectCollision();
+
+	//TODO: 同じ剛体にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
+	SolveConstraint();
+
 	// ApplyPressureが他のパーティクルの圧力値を使うので、すべて圧力値を計算してから別ループにする必要がある
 	ParallelFor(NumThreads,
 		[this, DeltaSeconds](int32 ThreadIndex)
@@ -136,6 +142,23 @@ void ARigidBodies::Simulate(float DeltaSeconds)
 			}
 		}
 	);
+}
+
+void ARigidBodies::DetectCollision()
+{
+	for (int32 i = 0; i < NumRigidBodies; ++i)
+	{
+		for (int32 j = i + 1; j < NumRigidBodies; ++i)
+		{
+		}
+	}
+}
+
+void ARigidBodies::SolveConstraint()
+{
+	for (const FContactPair& ContactPair : ContactPairs)
+	{
+	}
 }
 
 void ARigidBodies::Integrate(int32 RBIdx, float DeltaSeconds)

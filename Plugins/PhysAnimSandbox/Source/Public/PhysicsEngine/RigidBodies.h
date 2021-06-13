@@ -82,8 +82,8 @@ private:
 
 private:
 	void Simulate(float DeltaSeconds);
-	void DetectCollision(int32 RBIdx, float DeltaSeconds);
-	void SolveConstraint(int32 RBIdx, float DeltaSeconds);
+	void DetectCollision();
+	void SolveConstraint();
 	void Integrate(int32 RBIdx, float DeltaSeconds);
 
 private:
@@ -94,7 +94,15 @@ private:
 	TArray<FVector> LinearVelocities;
 	TArray<FVector> AngularVelocities;
 
+	struct FContactPair
+	{
+		int32 RigidBodyA_Idx;
+		int32 RigidBodyB_Idx;
+	};
+	TArray<FContactPair> ContactPairs;
+
 	int32 NumThreadParticles = 0;
+	int32 NumPairs = 0;
 
 public:
 	/** Returns NiagaraComponent subobject **/
