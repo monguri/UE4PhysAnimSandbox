@@ -15,12 +15,14 @@ namespace
 		FVector Point;
 		float L;
 
+		float RadiusSq = BoxSphere.SphereRadius * BoxSphere.SphereRadius;
+
 		do
 		{
 			Point = FMath::RandPointInBox(BoxSphere.GetBox());
 			L = (Point - CenterPos).SizeSquared();
 		}
-		while (L > BoxSphere.SphereRadius);
+		while (L > RadiusSq);
 
 		return Point;
 	}
