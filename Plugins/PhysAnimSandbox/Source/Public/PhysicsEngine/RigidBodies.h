@@ -51,7 +51,7 @@ private:
 	int32 NumThreads = 4;
 
 	UPROPERTY(EditAnywhere)
-	int32 NumIterations = 4;
+	int32 NumIterations = 1;
 
 	UPROPERTY(EditAnywhere)
 	float FrameRate = 60.0f;
@@ -66,6 +66,12 @@ private:
 	float Mass = 0.1f;
 
 	UPROPERTY(EditAnywhere)
+	float InitPosRadius = 50.0f;
+
+	UPROPERTY(EditAnywhere)
+	FVector InitPosCenter = FVector(0.0f, 0.0f, 300.0f);
+
+	UPROPERTY(EditAnywhere)
 	FVector CubeScale = FVector(0.1f, 0.1f, 0.1f); // for 1m x 1m x 1m cube.
 
 	UPROPERTY(EditAnywhere)
@@ -76,14 +82,17 @@ private:
 
 private:
 	void Simulate(float DeltaSeconds);
-	void ApplyWallPenalty(int32 ParticleIdx);
-	void Integrate(int32 ParticleIdx, float DeltaSeconds);
+	void DetectCollision(int32 RBIdx, float DeltaSeconds);
+	void SolveConstraint(int32 RBIdx, float DeltaSeconds);
+	void Integrate(int32 RBIdx, float DeltaSeconds);
 
 private:
 	TArray<FVector> Positions;
 	TArray<FQuat> Orientations;
 	TArray<FVector> Scales;
 	TArray<FLinearColor> Colors;
+	TArray<FVector> LinearVelocities;
+
 	int32 NumThreadParticles = 0;
 
 public:

@@ -10,6 +10,21 @@
 
 namespace
 {
+	FVector RandPointInSphere(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
+	{
+		FVector Point;
+		float L;
+
+		do
+		{
+			Point = FMath::RandPointInBox(BoxSphere.GetBox());
+			L = (Point - CenterPos).SizeSquared();
+		}
+		while (L > BoxSphere.SphereRadius);
+
+		return Point;
+	}
+
 	// UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector()を参考にしている
 	void SetNiagaraArrayVector(UNiagaraComponent* NiagaraSystem, FName OverrideName, const TArray<FVector>& ArrayData)
 	{
@@ -48,10 +63,27 @@ void ARigidBodies::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Positions.Add(FVector(0.0f, 0.0f, 10.0f));
-	Orientations.Add(FQuat::Identity);
-	Scales.Add(CubeScale);
-	Colors.Add(FLinearColor::White);
+	Positions.SetNum(NumRigidBodies);
+	Orientations.SetNum(NumRigidBodies);
+	Scales.SetNum(NumRigidBodies);
+	Colors.SetNum(NumRigidBodies);
+	LinearVelocities.SetNum(NumRigidBodies);
+
+	// InitPosRadius半径の球内にランダムに配置
+	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
+	for (int32 i = 0; i < NumRigidBodies; ++i)
+	{
+		Positions[i] = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
+	}
+
+	// とりあえずこれらは一定値固定で
+	for (int32 i = 0; i < NumRigidBodies; ++i)
+	{
+		Orientations[i] = FQuat::Identity;
+		Scales[i] = CubeScale;
+		Colors[i] = FLinearColor::White;
+		LinearVelocities[i] = FVector::ZeroVector;
+	}
 
 	// Tick()で設定しても、レベルにNiagaraSystemが最初から配置されていると、初回のスポーンでは配列は初期値を使ってしまい
 	//間に合わないのでBeginPlay()でも設定する
@@ -82,6 +114,8 @@ void ARigidBodies::Tick(float DeltaSeconds)
 	NiagaraComponent->SetVariableInt(FName("NumRigidBodies"), NumRigidBodies);
 	SetNiagaraArrayVector(NiagaraComponent, FName("Positions"), Positions);
 	SetNiagaraArrayQuat(NiagaraComponent, FName("Orientations"), Orientations);
+	SetNiagaraArrayVector(NiagaraComponent, FName("Scales"), Scales);
+	SetNiagaraArrayColor(NiagaraComponent, FName("Colors"), Colors);
 
 	NumThreadParticles = (NumRigidBodies + NumThreads - 1) / NumThreads;
 }
@@ -92,21 +126,22 @@ void ARigidBodies::Simulate(float DeltaSeconds)
 	ParallelFor(NumThreads,
 		[this, DeltaSeconds](int32 ThreadIndex)
 		{
-			for (int32 ParticleIdx = NumThreadParticles * ThreadIndex; ParticleIdx < NumThreadParticles * (ThreadIndex + 1) && ParticleIdx < NumRigidBodies; ++ParticleIdx)
+			for (int32 RBIdx = NumThreadParticles * ThreadIndex; RBIdx < NumThreadParticles * (ThreadIndex + 1) && RBIdx < NumRigidBodies; ++RBIdx)
 			{
-				Integrate(ParticleIdx, DeltaSeconds);
-				ApplyWallPenalty(ParticleIdx);
+				Integrate(RBIdx, DeltaSeconds);
 			}
 		}
 	);
 }
 
-void ARigidBodies::ApplyWallPenalty(int32 ParticleIdx)
+void ARigidBodies::Integrate(int32 RBIdx, float DeltaSeconds)
 {
-}
-
-void ARigidBodies::Integrate(int32 ParticleIdx, float DeltaSeconds)
-{
+	LinearVelocities[RBIdx] += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
+	// TODO:仮。発散しないように
+	LinearVelocities[RBIdx].Z = FMath::Max(LinearVelocities[RBIdx].Z, -1000.0f);
+	Positions[RBIdx] += LinearVelocities[RBIdx] * DeltaSeconds;
+	// TODO:仮。発散しないように
+	Positions[RBIdx].Z = FMath::Max(Positions[RBIdx].Z, 25.0f);
 }
 
 ARigidBodies::ARigidBodies()
