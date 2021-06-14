@@ -148,7 +148,7 @@ void ARigidBodies::DetectCollision()
 {
 	for (int32 i = 0; i < NumRigidBodies; ++i)
 	{
-		for (int32 j = i + 1; j < NumRigidBodies; ++i)
+		for (int32 j = i + 1; j < NumRigidBodies; ++j)
 		{
 		}
 	}
