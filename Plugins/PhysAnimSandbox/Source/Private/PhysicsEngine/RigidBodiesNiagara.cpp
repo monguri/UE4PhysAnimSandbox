@@ -1,4 +1,4 @@
-#include "PhysicsEngine/RigidBodies.h"
+#include "PhysicsEngine/RigidBodiesNiagara.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Texture2D.h"
 #include "Components/ArrowComponent.h"
@@ -61,7 +61,7 @@ namespace
 	}
 }
 
-void ARigidBodies::BeginPlay()
+void ARigidBodiesNiagara::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -104,7 +104,7 @@ void ARigidBodies::BeginPlay()
 	SetNiagaraArrayColor(NiagaraComponent, FName("Colors"), Colors);
 }
 
-void ARigidBodies::Tick(float DeltaSeconds)
+void ARigidBodiesNiagara::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
@@ -122,7 +122,7 @@ void ARigidBodies::Tick(float DeltaSeconds)
 	SetNiagaraArrayVector(NiagaraComponent, FName("Positions"), Positions);
 }
 
-void ARigidBodies::Simulate(float DeltaSeconds)
+void ARigidBodiesNiagara::Simulate(float DeltaSeconds)
 {
 	ContactPairs.Reset();
 
@@ -144,7 +144,7 @@ void ARigidBodies::Simulate(float DeltaSeconds)
 	);
 }
 
-void ARigidBodies::DetectCollision()
+void ARigidBodiesNiagara::DetectCollision()
 {
 	for (int32 i = 0; i < NumRigidBodies; ++i)
 	{
@@ -154,14 +154,14 @@ void ARigidBodies::DetectCollision()
 	}
 }
 
-void ARigidBodies::SolveConstraint()
+void ARigidBodiesNiagara::SolveConstraint()
 {
 	for (const FContactPair& ContactPair : ContactPairs)
 	{
 	}
 }
 
-void ARigidBodies::Integrate(int32 RBIdx, float DeltaSeconds)
+void ARigidBodiesNiagara::Integrate(int32 RBIdx, float DeltaSeconds)
 {
 	LinearVelocities[RBIdx] += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
 	// TODO:‰¼B”­ŽU‚µ‚È‚¢‚æ‚¤‚É
@@ -175,7 +175,7 @@ void ARigidBodies::Integrate(int32 RBIdx, float DeltaSeconds)
 	Orientations[RBIdx] = (Orientations[RBIdx] + OrientationDifferential * DeltaSeconds).GetNormalized();
 }
 
-ARigidBodies::ARigidBodies()
+ARigidBodiesNiagara::ARigidBodiesNiagara()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -232,23 +232,23 @@ ARigidBodies::ARigidBodies()
 #endif // WITH_EDITORONLY_DATA
 }
 
-void ARigidBodies::PostRegisterAllComponents()
+void ARigidBodiesNiagara::PostRegisterAllComponents()
 {
 	Super::PostRegisterAllComponents();
 
 	// Set Notification Delegate
 	if (NiagaraComponent)
 	{
-		NiagaraComponent->OnSystemFinished.AddUniqueDynamic(this, &ARigidBodies::OnNiagaraSystemFinished);
+		NiagaraComponent->OnSystemFinished.AddUniqueDynamic(this, &ARigidBodiesNiagara::OnNiagaraSystemFinished);
 	}
 }
 
-void ARigidBodies::SetDestroyOnSystemFinish(bool bShouldDestroyOnSystemFinish)
+void ARigidBodiesNiagara::SetDestroyOnSystemFinish(bool bShouldDestroyOnSystemFinish)
 {
 	bDestroyOnSystemFinish = bShouldDestroyOnSystemFinish ? 1 : 0;  
 };
 
-void ARigidBodies::OnNiagaraSystemFinished(UNiagaraComponent* FinishedComponent)
+void ARigidBodiesNiagara::OnNiagaraSystemFinished(UNiagaraComponent* FinishedComponent)
 {
 	if (bDestroyOnSystemFinish)
 	{
@@ -257,7 +257,7 @@ void ARigidBodies::OnNiagaraSystemFinished(UNiagaraComponent* FinishedComponent)
 }
 
 #if WITH_EDITOR
-bool ARigidBodies::GetReferencedContentObjects(TArray<UObject*>& Objects) const
+bool ARigidBodiesNiagara::GetReferencedContentObjects(TArray<UObject*>& Objects) const
 {
 	Super::GetReferencedContentObjects(Objects);
 
@@ -269,7 +269,7 @@ bool ARigidBodies::GetReferencedContentObjects(TArray<UObject*>& Objects) const
 	return true;
 }
 
-void ARigidBodies::ResetInLevel()
+void ARigidBodiesNiagara::ResetInLevel()
 {
 	if (NiagaraComponent)
 	{

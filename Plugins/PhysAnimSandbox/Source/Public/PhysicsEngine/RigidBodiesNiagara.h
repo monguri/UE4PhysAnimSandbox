@@ -3,16 +3,16 @@
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "GameFramework/Actor.h"
-#include "RigidBodies.generated.h"
+#include "RigidBodiesNiagara.generated.h"
 
 UCLASS()
 // ANiagaraActor‚ğQl‚É‚µ‚Ä‚¢‚é
-class ARigidBodies : public AActor
+class ARigidBodiesNiagara : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ARigidBodies();
+	ARigidBodiesNiagara();
 
 	virtual void PostRegisterAllComponents() override;
 
