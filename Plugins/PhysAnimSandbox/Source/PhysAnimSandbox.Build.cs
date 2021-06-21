@@ -39,6 +39,7 @@ public class PhysAnimSandbox : ModuleRules
                 "AnimGraphRuntime",
 				"BlueprintGraph",
 				"Niagara",
+				"CustomMeshComponent",
 			}
 			);
 		

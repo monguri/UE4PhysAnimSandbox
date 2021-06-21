@@ -67,6 +67,7 @@ private:
 	struct FCollisionShape
 	{
 		TArray<FVector> Vertices;
+		int32 VerticesOffset;
 		TArray<FEdge> Edges;
 		TArray<FFacet> Facets;
 	};
@@ -79,10 +80,12 @@ private:
 		FQuat Orientation = FQuat::Identity;
 		FVector LinearVelocity = FVector::ZeroVector;
 		FVector AngularVelocity = FVector::ZeroVector;
-
-		class UCustomMeshComponent* DrawMesh;
 	};
 
 	TArray<FRigidBody> RigidBodies;
+
+	/** Pointer to custom mesh component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UCustomMeshComponent* DrawMesh;
 };
 
