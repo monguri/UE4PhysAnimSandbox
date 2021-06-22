@@ -48,6 +48,22 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{7, 1}, {10, 11}},
 	};
 
+	static TArray<FFacet> BoxFacets = 
+	{
+		{{0, 1, 2}, {1, 3, 4}, FVector(0, 0, -1)},
+		{{1, 3, 2}, {0, 1, 2}, FVector(0, 0, -1)},
+		{{4, 7, 5}, {5, 6, 7}, FVector(0, 0, +1)},
+		{{4, 6, 7}, {6, 8, 9}, FVector(0, 0, +1)},
+		{{2, 3, 6}, {0, 10, 11}, FVector(0, +1, 0)},
+		{{3, 7, 6}, {9, 11, 12}, FVector(0, +1, 0)},
+		{{1, 0, 5}, {4, 13, 14}, FVector(0, -1, 0)},
+		{{0, 4, 5}, {5, 14, 15}, FVector(0, -1, 0)},
+		{{0, 2, 4}, {3, 15, 16}, FVector(-1, 0, 0)},
+		{{2, 6, 4}, {8, 10, 16}, FVector(-1, 0, 0)},
+		{{3, 1, 7}, {2, 12, 17}, FVector(+1, 0, 0)},
+		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
+	};
+
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
