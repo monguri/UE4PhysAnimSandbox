@@ -84,27 +84,42 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
 	};
 
+	TArray<FVector> BoxVerticesFloor;
+	for (const FVector& Vertex : BoxVertices)
+	{
+		BoxVerticesFloor.Add(Vertex * FloorScale);
+	}
+
+	RigidBodies.SetNum(NumRigidBodies + 1); // +1はフロアの分
+
+	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
+	FRigidBody& FloorRigidBody = RigidBodies[0];
+	FloorRigidBody.CollisionShape.Vertices = BoxVerticesFloor;
+	FloorRigidBody.CollisionShape.Edges = BoxEdges;
+	FloorRigidBody.CollisionShape.Facets = BoxFacets;
+	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
+	// TODO:とりあえずその他の物理パラメータは初期値のまま
+
 	TArray<FVector> BoxVerticesScaled;
 	for (const FVector& Vertex : BoxVertices)
 	{
 		BoxVerticesScaled.Add(Vertex * CubeScale);
 	}
 
-	RigidBodies.SetNum(NumRigidBodies);
-
 	// InitPosRadius半径の球内にランダムに配置
 	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
 
-	for (FRigidBody& RigidBody : RigidBodies)
+	for (int32 i = 1; i < RigidBodies.Num(); i++)
 	{
-		RigidBody.CollisionShape.Vertices = BoxVerticesScaled;
-		RigidBody.CollisionShape.Edges = BoxEdges;
-		RigidBody.CollisionShape.Facets = BoxFacets;
-
-		RigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
+		FRigidBody& CubeRigidBody = RigidBodies[i];
+		CubeRigidBody.CollisionShape.Vertices = BoxVerticesScaled;
+		CubeRigidBody.CollisionShape.Edges = BoxEdges;
+		CubeRigidBody.CollisionShape.Facets = BoxFacets;
+		CubeRigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
+	// CustomMeshComponentのメッシュの設定
 	TArray<FCustomMeshTriangle> CustomMeshTris;
 
 	for (const FRigidBody& RigidBody : RigidBodies)
