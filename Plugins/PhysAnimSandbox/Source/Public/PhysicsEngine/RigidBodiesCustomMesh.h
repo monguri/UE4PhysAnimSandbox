@@ -67,7 +67,6 @@ private:
 	struct FCollisionShape
 	{
 		TArray<FVector> Vertices;
-		int32 VerticesOffset;
 		TArray<FEdge> Edges;
 		TArray<FFacet> Facets;
 	};
