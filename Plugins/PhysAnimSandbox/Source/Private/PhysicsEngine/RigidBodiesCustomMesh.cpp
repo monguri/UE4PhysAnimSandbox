@@ -8,11 +8,6 @@ ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 
 	DrawMesh = CreateDefaultSubobject<UCustomMeshComponent>(TEXT("CustomMeshComponent0"));
 	RootComponent = DrawMesh;
-}
-
-void ARigidBodiesCustomMesh::BeginPlay()
-{
-	Super::BeginPlay();
 
 	static TArray<FVector> BoxVertices = 
 	{
@@ -64,6 +59,23 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
 	};
 
+	TArray<FCustomMeshTriangle> CustomMeshTris;
+
+	for (const FFacet& Facet : BoxFacets)
+	{
+		FCustomMeshTriangle Tri;
+		Tri.Vertex0 = BoxVertices[Facet.VertId[0]];
+		Tri.Vertex1 = BoxVertices[Facet.VertId[1]];
+		Tri.Vertex2 = BoxVertices[Facet.VertId[2]];
+		CustomMeshTris.Add(Tri);
+	}
+
+	DrawMesh->SetCustomMeshTriangles(CustomMeshTris);
+}
+
+void ARigidBodiesCustomMesh::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
