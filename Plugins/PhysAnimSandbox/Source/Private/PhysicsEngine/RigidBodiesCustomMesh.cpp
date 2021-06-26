@@ -59,15 +59,29 @@ ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
 	};
 
+	RigidBodies.SetNum(NumRigidBodies);
+
+	for (FRigidBody& RigidBody : RigidBodies)
+	{
+		RigidBody.CollisionShape.Vertices = BoxVertices;
+		RigidBody.CollisionShape.Edges = BoxEdges;
+		RigidBody.CollisionShape.Facets = BoxFacets;
+
+		// TODO:とりあえず物理パラメータは初期値のまま
+	}
+
 	TArray<FCustomMeshTriangle> CustomMeshTris;
 
-	for (const FFacet& Facet : BoxFacets)
+	for (const FRigidBody& RigidBody : RigidBodies)
 	{
-		FCustomMeshTriangle Tri;
-		Tri.Vertex0 = BoxVertices[Facet.VertId[0]];
-		Tri.Vertex1 = BoxVertices[Facet.VertId[1]];
-		Tri.Vertex2 = BoxVertices[Facet.VertId[2]];
-		CustomMeshTris.Add(Tri);
+		for (const FFacet& Facet : RigidBody.CollisionShape.Facets)
+		{
+			FCustomMeshTriangle Tri;
+			Tri.Vertex0 = RigidBody.CollisionShape.Vertices[Facet.VertId[0]];
+			Tri.Vertex1 = RigidBody.CollisionShape.Vertices[Facet.VertId[1]];
+			Tri.Vertex2 = RigidBody.CollisionShape.Vertices[Facet.VertId[2]];
+			CustomMeshTris.Add(Tri);
+		}
 	}
 
 	DrawMesh->SetCustomMeshTriangles(CustomMeshTris);
