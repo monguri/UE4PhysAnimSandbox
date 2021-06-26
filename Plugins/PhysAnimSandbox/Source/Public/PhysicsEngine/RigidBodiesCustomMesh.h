@@ -86,5 +86,7 @@ private:
 	/** Pointer to custom mesh component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCustomMeshComponent* DrawMesh;
+
+	void ApplyRigidBodiesToMeshDrawing();
 };
 

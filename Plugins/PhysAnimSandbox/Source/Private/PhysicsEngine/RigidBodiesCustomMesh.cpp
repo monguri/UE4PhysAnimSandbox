@@ -118,7 +118,17 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
+}
 
+void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	ApplyRigidBodiesToMeshDrawing();
+}
+
+void ARigidBodiesCustomMesh::ApplyRigidBodiesToMeshDrawing()
+{
 	// CustomMeshComponentのメッシュの設定
 	TArray<FCustomMeshTriangle> CustomMeshTris;
 
@@ -135,10 +145,5 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	}
 
 	DrawMesh->SetCustomMeshTriangles(CustomMeshTris);
-}
-
-void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
 }
 
