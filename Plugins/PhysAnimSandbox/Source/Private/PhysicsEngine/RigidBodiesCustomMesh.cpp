@@ -2,12 +2,37 @@
 #include "UObject/ConstructorHelpers.h"
 #include "CustomMeshComponent.h"
 
+namespace
+{
+	FVector RandPointInSphere(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
+	{
+		FVector Point;
+		float L;
+
+		float RadiusSq = BoxSphere.SphereRadius * BoxSphere.SphereRadius;
+
+		do
+		{
+			Point = FMath::RandPointInBox(BoxSphere.GetBox());
+			L = (Point - CenterPos).SizeSquared();
+		}
+		while (L > RadiusSq);
+
+		return Point;
+	}
+}
+
 ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	DrawMesh = CreateDefaultSubobject<UCustomMeshComponent>(TEXT("CustomMeshComponent0"));
 	RootComponent = DrawMesh;
+}
+
+void ARigidBodiesCustomMesh::BeginPlay()
+{
+	Super::BeginPlay();
 
 	static TArray<FVector> BoxVertices = 
 	{
@@ -59,15 +84,25 @@ ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
 	};
 
+	TArray<FVector> BoxVerticesScaled;
+	for (const FVector& Vertex : BoxVertices)
+	{
+		BoxVerticesScaled.Add(Vertex * CubeScale);
+	}
+
 	RigidBodies.SetNum(NumRigidBodies);
+
+	// InitPosRadius半径の球内にランダムに配置
+	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
 
 	for (FRigidBody& RigidBody : RigidBodies)
 	{
-		RigidBody.CollisionShape.Vertices = BoxVertices;
+		RigidBody.CollisionShape.Vertices = BoxVerticesScaled;
 		RigidBody.CollisionShape.Edges = BoxEdges;
 		RigidBody.CollisionShape.Facets = BoxFacets;
 
-		// TODO:とりあえず物理パラメータは初期値のまま
+		RigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
+		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
 	TArray<FCustomMeshTriangle> CustomMeshTris;
@@ -77,19 +112,14 @@ ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 		for (const FFacet& Facet : RigidBody.CollisionShape.Facets)
 		{
 			FCustomMeshTriangle Tri;
-			Tri.Vertex0 = RigidBody.CollisionShape.Vertices[Facet.VertId[0]];
-			Tri.Vertex1 = RigidBody.CollisionShape.Vertices[Facet.VertId[1]];
-			Tri.Vertex2 = RigidBody.CollisionShape.Vertices[Facet.VertId[2]];
+			Tri.Vertex0 = RigidBody.Position + RigidBody.Orientation * RigidBody.CollisionShape.Vertices[Facet.VertId[0]];
+			Tri.Vertex1 = RigidBody.Position + RigidBody.Orientation * RigidBody.CollisionShape.Vertices[Facet.VertId[1]];
+			Tri.Vertex2 = RigidBody.Position + RigidBody.Orientation * RigidBody.CollisionShape.Vertices[Facet.VertId[2]];
 			CustomMeshTris.Add(Tri);
 		}
 	}
 
 	DrawMesh->SetCustomMeshTriangles(CustomMeshTris);
-}
-
-void ARigidBodiesCustomMesh::BeginPlay()
-{
-	Super::BeginPlay();
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
