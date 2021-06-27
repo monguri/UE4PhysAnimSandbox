@@ -236,7 +236,7 @@ namespace
 		// Bローカル座標からAローカル座標への変換 BLocalToWorld^-1 * ALocalToWorld
 		const FTransform& BLocalToALocal = ALocalToBLocal.Inverse();
 
-		// ConvexAの面法線を分離軸にしたとき。Aのローカル座標であつかう　
+		// ConvexAの面法線を分離軸にしたとき
 		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyA.CollisionShape.Facets)
 		{
 			const FVector& SeparatingAxis = Facet.Normal;
@@ -260,7 +260,7 @@ namespace
 			}
 		}
 
-		// ConvexBの面法線を分離軸にしたとき。Bのローカル座標であつかう　
+		// ConvexBの面法線を分離軸にしたとき
 		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyB.CollisionShape.Facets)
 		{
 			const FVector& SeparatingAxis = BLocalToALocal.TransformVector(Facet.Normal);
@@ -284,7 +284,21 @@ namespace
 			}
 		}
 
-		return false;
+		// ConvexAとConvexBのエッジの外積を分離軸としたとき
+		for (const ARigidBodiesCustomMesh::FEdge& EdgeA : RigidBodyA.CollisionShape.Edges)
+		{
+			const FVector& EdgeVecA = RigidBodyA.CollisionShape.Vertices[EdgeA.VertId[1]] - RigidBodyA.CollisionShape.Vertices[EdgeA.VertId[0]];
+
+			for (const ARigidBodiesCustomMesh::FEdge& EdgeB : RigidBodyB.CollisionShape.Edges)
+			{
+				const FVector& EdgeVecB = BLocalToALocal.TransformVector(RigidBodyB.CollisionShape.Vertices[EdgeB.VertId[1]] - RigidBodyB.CollisionShape.Vertices[EdgeB.VertId[0]]);
+
+				const FVector& SeparatingAxis = EdgeVecA ^ EdgeVecB;
+
+			}
+		}
+
+		return true;
 	}
 };
 
