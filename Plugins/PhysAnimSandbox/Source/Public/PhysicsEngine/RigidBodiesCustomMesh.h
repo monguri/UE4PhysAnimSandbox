@@ -50,7 +50,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	FVector FloorPosition = FVector(0.0f, 0.0f, -25.0f);
 
-private:
+public:
 	struct FEdge
 	{
 		int32 VertId[2];
@@ -81,6 +81,7 @@ private:
 		FVector AngularVelocity = FVector::ZeroVector;
 	};
 
+private:
 	TArray<FRigidBody> RigidBodies;
 	int32 NumThreadRBs = 0;
 
@@ -88,6 +89,19 @@ private:
 	{
 		int32 RigidBodyA_Idx;
 		int32 RigidBodyB_Idx;
+		FVector ContactPointA;
+		FVector ContactPointB;
+		FVector Normal;
+		float PenetrationDepth;
+
+		FContactPair(int32 _RigidBodyA_Idx, int32 _RigidBodyB_Idx, const FVector& _ContactPointA, const FVector& _ContactPointB, const FVector& _Normal, float _PenetrationDepth) :
+			RigidBodyA_Idx(_RigidBodyA_Idx)
+			, RigidBodyB_Idx(_RigidBodyB_Idx)
+			, ContactPointA(_ContactPointA)
+			, ContactPointB(_ContactPointB)
+			, Normal(_Normal)
+			, PenetrationDepth(_PenetrationDepth)
+		{}
 	};
 	TArray<FContactPair> ContactPairs;
 

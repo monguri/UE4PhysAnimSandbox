@@ -2,6 +2,14 @@
 #include "UObject/ConstructorHelpers.h"
 #include "CustomMeshComponent.h"
 
+ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	DrawMesh = CreateDefaultSubobject<UCustomMeshComponent>(TEXT("CustomMeshComponent0"));
+	RootComponent = DrawMesh;
+}
+
 namespace
 {
 	FVector RandPointInSphere(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
@@ -20,14 +28,6 @@ namespace
 
 		return Point;
 	}
-}
-
-ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
-{
-	PrimaryActorTick.bCanEverTick = true;
-
-	DrawMesh = CreateDefaultSubobject<UCustomMeshComponent>(TEXT("CustomMeshComponent0"));
-	RootComponent = DrawMesh;
 }
 
 void ARigidBodiesCustomMesh::BeginPlay()
@@ -163,11 +163,36 @@ void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 	);
 }
 
+namespace
+{
+	bool DetectConvexConvexContact(const ARigidBodiesCustomMesh::FRigidBody& RigidBodyA, const ARigidBodiesCustomMesh::FRigidBody& RigidBodyB, FVector& OutNormal, float& OutPenetrationDepth, FVector& OutContactPointA, FVector& OutContactPointB)
+	{
+		// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえずいいや
+		return false;
+	}
+};
+
 void ARigidBodiesCustomMesh::DetectCollision()
 {
-	for (const FRigidBody& RigidBody : RigidBodies)
+	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
-		;
+		for (int32 j = i + 1; j < NumRigidBodies + 1; j++)
+		{
+			const FRigidBody& RigidBodyA = RigidBodies[i];
+			const FRigidBody& RigidBodyB = RigidBodies[j];
+
+			// TODO:box同士なので、ひとつの面に2つのトライアングルで扱う必要なく、4頂点の1面で扱ったほうがエッジも減るし計算量減らせるが
+			// とりあえずconvex-convexで計算する
+			FVector Normal;
+			float PenetrationDepth;
+			FVector ContactPointA;
+			FVector ContactPointB;
+			bool bContacting = DetectConvexConvexContact(RigidBodyA, RigidBodyB, Normal, PenetrationDepth, ContactPointA, ContactPointB);
+			if (bContacting)
+			{
+				ContactPairs.Emplace(i, j, ContactPointA, ContactPointB, Normal, PenetrationDepth);
+			}
+		}
 	}
 }
 
