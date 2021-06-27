@@ -221,7 +221,7 @@ namespace
 	{
 		// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえずいいや
 
-		// 最も浅い貫通深度とその分離軸
+		// 最も浅い貫通深度とその分離軸。Aのローカル座標で扱い、Aを押し返すという考え方で扱う。
 		float DistanceMin = -FLT_MAX;
 		FVector AxisMin = FVector::ZeroVector;
 
@@ -239,19 +239,45 @@ namespace
 		// ConvexAの面法線を分離軸にしたとき。Aのローカル座標であつかう　
 		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyA.CollisionShape.Facets)
 		{
+			const FVector& SeparatingAxis = Facet.Normal;
+
 			// ConvexAを分離軸に投影
 			float MinA, MaxA;
-			GetConvexProjectedRange(RigidBodyA.CollisionShape, Facet.Normal, MinA, MaxA);
+			GetConvexProjectedRange(RigidBodyA.CollisionShape, SeparatingAxis, MinA, MaxA);
 
 			// ConvexBを分離軸に投影
 			float MinB, MaxB;
-			GetConvexProjectedRange(RigidBodyB.CollisionShape, ALocalToBLocal.TransformVector(Facet.Normal), MinB, MaxB);
-			float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | Facet.Normal;
+			GetConvexProjectedRange(RigidBodyB.CollisionShape, ALocalToBLocal.TransformVector(SeparatingAxis), MinB, MaxB);
+			float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | SeparatingAxis;
 			MinB += DistanceAlongSeparationAxis;
 			MaxB += DistanceAlongSeparationAxis;
 
 			// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
-			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, Facet.Normal, SeparationAxisType::PointBFacetA, DistanceMin, AxisMin, SAType, bAxisFlip);
+			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::PointBFacetA, DistanceMin, AxisMin, SAType, bAxisFlip);
+			if (bSeparationPlaneExist)
+			{
+				return false;
+			}
+		}
+
+		// ConvexBの面法線を分離軸にしたとき。Bのローカル座標であつかう　
+		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyB.CollisionShape.Facets)
+		{
+			const FVector& SeparatingAxis = BLocalToALocal.TransformVector(Facet.Normal);
+
+			// ConvexAを分離軸に投影
+			float MinA, MaxA;
+			GetConvexProjectedRange(RigidBodyA.CollisionShape, SeparatingAxis, MinA, MaxA);
+
+			// ConvexBを分離軸に投影
+			float MinB, MaxB;
+			GetConvexProjectedRange(RigidBodyB.CollisionShape, Facet.Normal, MinB, MaxB);
+			float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | SeparatingAxis;
+			MinB += DistanceAlongSeparationAxis;
+			MaxB += DistanceAlongSeparationAxis;
+
+			// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::PointAFacetB, DistanceMin, AxisMin, SAType, bAxisFlip);
 			if (bSeparationPlaneExist)
 			{
 				return false;
