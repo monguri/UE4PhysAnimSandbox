@@ -120,6 +120,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
+
+	ContactPairs.Reserve(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
@@ -142,6 +144,8 @@ void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
 
 void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 {
+	ContactPairs.Reset();
+
 	//TODO: コンタクトペア配列にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
 	DetectCollision();
 
@@ -161,12 +165,18 @@ void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 
 void ARigidBodiesCustomMesh::DetectCollision()
 {
-
+	for (const FRigidBody& RigidBody : RigidBodies)
+	{
+		;
+	}
 }
 
 void ARigidBodiesCustomMesh::SolveConstraint()
 {
-
+	for (const FContactPair& ContactPair : ContactPairs)
+	{
+		;
+	}
 }
 
 void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)

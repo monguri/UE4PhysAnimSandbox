@@ -84,6 +84,13 @@ private:
 	TArray<FRigidBody> RigidBodies;
 	int32 NumThreadRBs = 0;
 
+	struct FContactPair
+	{
+		int32 RigidBodyA_Idx;
+		int32 RigidBodyB_Idx;
+	};
+	TArray<FContactPair> ContactPairs;
+
 	/** Pointer to custom mesh component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCustomMeshComponent* DrawMesh;
