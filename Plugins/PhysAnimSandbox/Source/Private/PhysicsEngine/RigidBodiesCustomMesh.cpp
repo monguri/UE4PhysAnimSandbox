@@ -165,9 +165,99 @@ void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 
 namespace
 {
+	void GetConvexProjectedRange(const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape, const FVector& Axis, float& OutMin, float& OutMax)
+	{
+		float Min = FLT_MAX;
+		float Max = -FLT_MAX;
+
+		for (const FVector& Vertex : CollisionShape.Vertices)
+		{
+			float ProjectedVal = Axis | Vertex;
+			Min = FMath::Min(Min, ProjectedVal);
+			Max = FMath::Max(Max, ProjectedVal);
+		}
+
+		OutMin = Min;
+		OutMax = Max;
+	}
+
+	enum SeparationAxisType : uint8
+	{
+		PointAFacetB,
+		PointBFacetA,
+		EdgeEdge,
+	};
+
+	bool CheckSeparationPlaneExistAndUpdateMinPenetration(float MinA, float MaxA, float MinB, float MaxB, const FVector& Axis, SeparationAxisType SAType, float& InOutDistanceMin, FVector& InOutAxisMin, SeparationAxisType& InOutSAType, bool& InOut_bAxisFlip)
+	{
+		float Dist1 = MinA - MaxB;
+		float Dist2 = MinB - MaxA;
+
+		if (Dist1 >= 0.0f || Dist2 >= 0.0f)
+		{
+			return true;
+		}
+
+		if (InOutDistanceMin < Dist1)
+		{
+			InOutDistanceMin = Dist1;
+			InOutAxisMin = Axis;
+			InOutSAType = SAType;
+			InOut_bAxisFlip = false;
+		}
+
+		if (InOutDistanceMin < Dist2)
+		{
+			InOutDistanceMin = Dist2;
+			InOutAxisMin = -Axis;
+			InOutSAType = SAType;
+			InOut_bAxisFlip = true;
+		}
+
+		return false;
+	}
+
 	bool DetectConvexConvexContact(const ARigidBodiesCustomMesh::FRigidBody& RigidBodyA, const ARigidBodiesCustomMesh::FRigidBody& RigidBodyB, FVector& OutNormal, float& OutPenetrationDepth, FVector& OutContactPointA, FVector& OutContactPointB)
 	{
 		// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえずいいや
+
+		// 最も浅い貫通深度とその分離軸
+		float DistanceMin = -FLT_MAX;
+		FVector AxisMin = FVector::ZeroVector;
+
+		SeparationAxisType SAType = EdgeEdge;
+		bool bAxisFlip = false; // Aを押し返す方向が分離軸の方向と一致すればfalse。逆方向ならtrue。
+
+		const FTransform& ALocalToWorld = FTransform(RigidBodyA.Orientation, RigidBodyA.Position);
+		const FTransform& BLocalToWorld = FTransform(RigidBodyB.Orientation, RigidBodyB.Position);
+
+		// Aローカル座標からBローカル座標への変換 BLocalToWorld^-1 * ALocalToWorld
+		const FTransform& ALocalToBLocal = ALocalToWorld * BLocalToWorld.Inverse();
+		// Bローカル座標からAローカル座標への変換 BLocalToWorld^-1 * ALocalToWorld
+		const FTransform& BLocalToALocal = ALocalToBLocal.Inverse();
+
+		// ConvexAの面法線を分離軸にしたとき。Aのローカル座標であつかう　
+		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyA.CollisionShape.Facets)
+		{
+			// ConvexAを分離軸に投影
+			float MinA, MaxA;
+			GetConvexProjectedRange(RigidBodyA.CollisionShape, Facet.Normal, MinA, MaxA);
+
+			// ConvexBを分離軸に投影
+			float MinB, MaxB;
+			GetConvexProjectedRange(RigidBodyB.CollisionShape, ALocalToBLocal.TransformVector(Facet.Normal), MinB, MaxB);
+			float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | Facet.Normal;
+			MinB += DistanceAlongSeparationAxis;
+			MaxB += DistanceAlongSeparationAxis;
+
+			// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, Facet.Normal, SeparationAxisType::PointBFacetA, DistanceMin, AxisMin, SAType, bAxisFlip);
+			if (bSeparationPlaneExist)
+			{
+				return false;
+			}
+		}
+
 		return false;
 	}
 };
