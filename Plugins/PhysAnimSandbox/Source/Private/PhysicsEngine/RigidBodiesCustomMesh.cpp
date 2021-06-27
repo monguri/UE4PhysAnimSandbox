@@ -34,6 +34,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 {
 	Super::BeginPlay();
 
+	NumThreadRBs = (NumRigidBodies + 1 + NumThreads - 1) / NumThreads; // +1はフロアの分
+
 	static TArray<FVector> BoxVertices = 
 	{
 		FVector(-0.5, -0.5, -0.5),
@@ -124,7 +126,67 @@ void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (DeltaSeconds > KINDA_SMALL_NUMBER)
+	{
+		// DeltaSecondsの値の変動に関わらず、シミュレーションに使うサブステップタイムは固定とする
+		float SubStepDeltaSeconds = 1.0f / FrameRate / NumIterations;
+
+		for (int32 i = 0; i < NumIterations; ++i)
+		{
+			Simulate(SubStepDeltaSeconds);
+		}
+	}
+
 	ApplyRigidBodiesToMeshDrawing();
+}
+
+void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
+{
+	//TODO: コンタクトペア配列にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
+	DetectCollision();
+
+	//TODO: 同じ剛体にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
+	SolveConstraint();
+
+	ParallelFor(NumThreads,
+		[this, DeltaSeconds](int32 ThreadIndex)
+		{
+			for (int32 RBIdx = NumThreadRBs * ThreadIndex; RBIdx < NumThreadRBs * (ThreadIndex + 1) && RBIdx < NumRigidBodies + 1; ++RBIdx)
+			{
+				Integrate(RBIdx, DeltaSeconds);
+			}
+		}
+	);
+}
+
+void ARigidBodiesCustomMesh::DetectCollision()
+{
+
+}
+
+void ARigidBodiesCustomMesh::SolveConstraint()
+{
+
+}
+
+void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
+{
+	// TODO:フロアをStatic扱いするのをとりあえずIntegrateのスキップで行う
+	if (RBIdx == 0)
+	{
+		return;
+	}
+
+	RigidBodies[RBIdx].LinearVelocity += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
+	// TODO:仮。発散しないように
+	RigidBodies[RBIdx].LinearVelocity.Z = FMath::Max(RigidBodies[RBIdx].LinearVelocity.Z, -1000.0f);
+
+	RigidBodies[RBIdx].Position += RigidBodies[RBIdx].LinearVelocity * DeltaSeconds;
+	// TODO:仮。発散しないように
+	RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, 25.0f);
+
+	const FQuat& OrientationDifferential = FQuat(RigidBodies[RBIdx].AngularVelocity.X, RigidBodies[RBIdx].AngularVelocity.Y, RigidBodies[RBIdx].AngularVelocity.Z, 0.0f) * RigidBodies[RBIdx].Orientation * 0.5f;
+	RigidBodies[RBIdx].Orientation = (RigidBodies[RBIdx].Orientation + OrientationDifferential * DeltaSeconds).GetNormalized();
 }
 
 void ARigidBodiesCustomMesh::ApplyRigidBodiesToMeshDrawing()

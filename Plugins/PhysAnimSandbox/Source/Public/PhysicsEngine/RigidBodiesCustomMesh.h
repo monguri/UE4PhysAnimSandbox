@@ -82,11 +82,16 @@ private:
 	};
 
 	TArray<FRigidBody> RigidBodies;
+	int32 NumThreadRBs = 0;
 
 	/** Pointer to custom mesh component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCustomMeshComponent* DrawMesh;
 
+	void Simulate(float DeltaSeconds);
+	void DetectCollision();
+	void SolveConstraint();
+	void Integrate(int32 RBIdx, float DeltaSeconds);
 	void ApplyRigidBodiesToMeshDrawing();
 };
 
