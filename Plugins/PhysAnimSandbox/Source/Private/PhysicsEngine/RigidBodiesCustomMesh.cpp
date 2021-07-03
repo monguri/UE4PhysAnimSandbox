@@ -219,7 +219,7 @@ namespace
 
 	bool DetectConvexConvexContact(const ARigidBodiesCustomMesh::FRigidBody& RigidBodyA, const ARigidBodiesCustomMesh::FRigidBody& RigidBodyB, FVector& OutNormal, float& OutPenetrationDepth, FVector& OutContactPointA, FVector& OutContactPointB)
 	{
-		// 最も浅い貫通深度とその分離軸。Aのローカル座標で扱い、Aを押し返すという考え方で扱う。
+		// 最も浅い貫通深度とそのときの分離軸（判定軸と呼ぶ）。Aのローカル座標で扱い、Aを押し返すという考え方で扱う。
 		float DistanceMin = -FLT_MAX;
 		FVector AxisMin = FVector::ZeroVector;
 
@@ -235,9 +235,9 @@ namespace
 		const FTransform& BLocalToALocal = ALocalToBLocal.Inverse();
 
 		// ConvexAの面法線を分離軸にしたとき
-		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyA.CollisionShape.Facets)
+		for (const ARigidBodiesCustomMesh::FFacet& FacetA : RigidBodyA.CollisionShape.Facets)
 		{
-			const FVector& SeparatingAxis = Facet.Normal;
+			const FVector& SeparatingAxis = FacetA.Normal;
 
 			// ConvexAを分離軸に投影
 			float MinA, MaxA;
@@ -250,7 +250,7 @@ namespace
 			MinB += DistanceAlongSeparationAxis;
 			MaxB += DistanceAlongSeparationAxis;
 
-			// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+			// 分離軸の存在判定と最も浅い貫通深度および判定軸の更新
 			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::PointBFacetA, DistanceMin, AxisMin, SAType, bAxisFlip);
 			if (bSeparationPlaneExist)
 			{
@@ -259,9 +259,9 @@ namespace
 		}
 
 		// ConvexBの面法線を分離軸にしたとき
-		for (const ARigidBodiesCustomMesh::FFacet& Facet : RigidBodyB.CollisionShape.Facets)
+		for (const ARigidBodiesCustomMesh::FFacet& FacetB : RigidBodyB.CollisionShape.Facets)
 		{
-			const FVector& SeparatingAxis = BLocalToALocal.TransformVector(Facet.Normal);
+			const FVector& SeparatingAxis = BLocalToALocal.TransformVector(FacetB.Normal);
 
 			// ConvexAを分離軸に投影
 			float MinA, MaxA;
@@ -269,12 +269,12 @@ namespace
 
 			// ConvexBを分離軸に投影
 			float MinB, MaxB;
-			GetConvexProjectedRange(RigidBodyB.CollisionShape, Facet.Normal, MinB, MaxB);
+			GetConvexProjectedRange(RigidBodyB.CollisionShape, FacetB.Normal, MinB, MaxB);
 			float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | SeparatingAxis;
 			MinB += DistanceAlongSeparationAxis;
 			MaxB += DistanceAlongSeparationAxis;
 
-			// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+			// 分離軸の存在判定と最も浅い貫通深度および判定軸の更新
 			bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::PointAFacetB, DistanceMin, AxisMin, SAType, bAxisFlip);
 			if (bSeparationPlaneExist)
 			{
@@ -309,10 +309,48 @@ namespace
 				MaxB += DistanceAlongSeparationAxis;
 
 				bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::EdgeEdge, DistanceMin, AxisMin, SAType, bAxisFlip);
-				// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+				// 分離軸の存在判定と最も浅い貫通深度および判定軸の更新
 				if (bSeparationPlaneExist)
 				{
 					return false;
+				}
+			}
+		}
+
+		// ここまでくれば、分離軸は存在せず衝突したことはわかっている。
+		// 衝突座標を検出する。
+		float ClosestDistanceSq = FLT_MAX;
+		FVector ClosestPointA, ClosestPointB = FVector::ZeroVector;
+		const FVector& Separation = 1.1f * FMath::Abs(DistanceMin) * AxisMin;
+
+		for (const ARigidBodiesCustomMesh::FFacet& FacetA : RigidBodyA.CollisionShape.Facets)
+		{
+			float FacetACheckValue = FacetA.Normal | -AxisMin;
+			if (FacetACheckValue < 0.0f)
+			{
+				// 判定軸と逆向きの面はSeparationTypeがなんであろうと評価しない
+				continue;
+			}
+
+			if (SAType == SeparationAxisType::PointBFacetA && FacetACheckValue < 0.99f && bAxisFlip)
+			{
+				// 判定軸がAの面法線のとき、向きの違うAの面は判定しない
+				continue;
+			}
+
+			for (const ARigidBodiesCustomMesh::FFacet& FacetB : RigidBodyB.CollisionShape.Facets)
+			{
+				float FacetBCheckValue = FacetB.Normal | ALocalToBLocal.TransformVector(AxisMin);
+				if (FacetBCheckValue < 0.0f)
+				{
+					// 判定軸と逆向きの面はSeparationTypeがなんであろうと評価しない
+					continue;
+				}
+
+				if (SAType == SeparationAxisType::PointAFacetB && FacetBCheckValue < 0.99f && !bAxisFlip)
+				{
+					// 判定軸がBの面法線のとき、向きの違うBの面は判定しない
+					continue;
 				}
 			}
 		}
@@ -368,7 +406,7 @@ void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 
 	RigidBodies[RBIdx].Position += RigidBodies[RBIdx].LinearVelocity * DeltaSeconds;
 	// TODO:仮。発散しないように
-	RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, 25.0f);
+	RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, -100.0f);
 
 	const FQuat& OrientationDifferential = FQuat(RigidBodies[RBIdx].AngularVelocity.X, RigidBodies[RBIdx].AngularVelocity.Y, RigidBodies[RBIdx].AngularVelocity.Z, 0.0f) * RigidBodies[RBIdx].Orientation * 0.5f;
 	RigidBodies[RBIdx].Orientation = (RigidBodies[RBIdx].Orientation + OrientationDifferential * DeltaSeconds).GetNormalized();
