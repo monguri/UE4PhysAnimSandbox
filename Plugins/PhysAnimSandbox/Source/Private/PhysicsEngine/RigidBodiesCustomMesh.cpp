@@ -352,9 +352,81 @@ namespace
 					// 判定軸がBの面法線のとき、向きの違うBの面は判定しない
 					continue;
 				}
+
+				// 面Aと面Bの最近接点を求める
+
+				FVector TriangleA[3] = {
+					Separation + RigidBodyA.CollisionShape.Vertices[FacetA.VertId[0]],
+					Separation + RigidBodyA.CollisionShape.Vertices[FacetA.VertId[1]],
+					Separation + RigidBodyA.CollisionShape.Vertices[FacetA.VertId[2]],
+				};
+
+				FVector TriangleB[3] = {
+					BLocalToALocal.TransformPosition(RigidBodyB.CollisionShape.Vertices[FacetB.VertId[0]]),
+					BLocalToALocal.TransformPosition(RigidBodyB.CollisionShape.Vertices[FacetB.VertId[1]]),
+					BLocalToALocal.TransformPosition(RigidBodyB.CollisionShape.Vertices[FacetB.VertId[2]]),
+				};
+
+				// エッジ同士の最近接点算出
+				for (int32 i = 0; i < 3; ++i)
+				{
+					for (int32 j = 0; j < 3; ++j)
+					{
+						FVector PointA, PointB;
+						FMath::SegmentDistToSegment(TriangleA[i], TriangleA[(i + 1) % 3], TriangleB[i], TriangleB[(i + 1) % 3], PointA, PointB);
+
+						float DistSq = (PointA - PointB).SizeSquared();
+						if (DistSq < ClosestDistanceSq)
+						{
+							ClosestDistanceSq = DistSq;
+							ClosestPointA = PointA;
+							ClosestPointB = PointB;
+						}
+					}
+				}
+
+				// 頂点Aと面Bの最近接点算出
+				for (int32 i = 0; i < 3; ++i)
+				{
+					for (int32 j = 0; j < 3; ++j)
+					{
+						const FVector& PointA = TriangleA[i];
+						const FVector& PointB = FMath::ClosestPointOnTriangleToPoint(PointA, TriangleB[0], TriangleB[1], TriangleB[2]);
+
+						float DistSq = (PointA - PointB).SizeSquared();
+						if (DistSq < ClosestDistanceSq)
+						{
+							ClosestDistanceSq = DistSq;
+							ClosestPointA = PointA;
+							ClosestPointB = PointB;
+						}
+					}
+				}
+
+				// 頂点Bと面Aの最近接点算出
+				for (int32 i = 0; i < 3; ++i)
+				{
+					for (int32 j = 0; j < 3; ++j)
+					{
+						const FVector& PointB = TriangleB[i];
+						const FVector& PointA = FMath::ClosestPointOnTriangleToPoint(PointB, TriangleA[0], TriangleA[1], TriangleA[2]);
+
+						float DistSq = (PointA - PointB).SizeSquared();
+						if (DistSq < ClosestDistanceSq)
+						{
+							ClosestDistanceSq = DistSq;
+							ClosestPointA = PointA;
+							ClosestPointB = PointB;
+						}
+					}
+				}
 			}
 		}
 
+		OutNormal = ALocalToWorld.TransformVector(AxisMin);
+		OutPenetrationDepth = DistanceMin;
+		OutContactPointA = ClosestPointA - Separation;
+		OutContactPointB = ALocalToBLocal.TransformPosition(ClosestPointB);
 		return true;
 	}
 };
