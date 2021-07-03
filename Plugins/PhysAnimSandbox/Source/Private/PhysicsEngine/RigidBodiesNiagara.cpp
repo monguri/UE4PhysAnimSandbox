@@ -10,7 +10,7 @@
 
 namespace
 {
-	FVector RandPointInSphere(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
+	FVector RandPointInSphereNiagara(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
 	{
 		FVector Point;
 		float L;
@@ -80,7 +80,7 @@ void ARigidBodiesNiagara::BeginPlay()
 	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
 	for (int32 i = 0; i < NumRigidBodies; ++i)
 	{
-		Positions[i] = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
+		Positions[i] = GetActorLocation() + RandPointInSphereNiagara(BoxSphere, InitPosCenter);
 	}
 
 	// ‚Æ‚è‚ ‚¦‚¸‚±‚ê‚ç‚Íˆê’è’lŒÅ’è‚Å

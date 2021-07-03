@@ -12,7 +12,7 @@ ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 
 namespace
 {
-	FVector RandPointInSphere(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
+	FVector RandPointInSphereCustomMesh(const FBoxSphereBounds& BoxSphere, const FVector& CenterPos)
 	{
 		FVector Point;
 		float L;
@@ -117,7 +117,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.CollisionShape.Vertices = BoxVerticesScaled;
 		CubeRigidBody.CollisionShape.Edges = BoxEdges;
 		CubeRigidBody.CollisionShape.Facets = BoxFacets;
-		CubeRigidBody.Position = GetActorLocation() + RandPointInSphere(BoxSphere, InitPosCenter);
+		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
@@ -219,13 +219,11 @@ namespace
 
 	bool DetectConvexConvexContact(const ARigidBodiesCustomMesh::FRigidBody& RigidBodyA, const ARigidBodiesCustomMesh::FRigidBody& RigidBodyB, FVector& OutNormal, float& OutPenetrationDepth, FVector& OutContactPointA, FVector& OutContactPointB)
 	{
-		// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえずいいや
-
 		// 最も浅い貫通深度とその分離軸。Aのローカル座標で扱い、Aを押し返すという考え方で扱う。
 		float DistanceMin = -FLT_MAX;
 		FVector AxisMin = FVector::ZeroVector;
 
-		SeparationAxisType SAType = EdgeEdge;
+		SeparationAxisType SAType = SeparationAxisType::EdgeEdge;
 		bool bAxisFlip = false; // Aを押し返す方向が分離軸の方向と一致すればfalse。逆方向ならtrue。
 
 		const FTransform& ALocalToWorld = FTransform(RigidBodyA.Orientation, RigidBodyA.Position);
@@ -294,7 +292,28 @@ namespace
 				const FVector& EdgeVecB = BLocalToALocal.TransformVector(RigidBodyB.CollisionShape.Vertices[EdgeB.VertId[1]] - RigidBodyB.CollisionShape.Vertices[EdgeB.VertId[0]]);
 
 				const FVector& SeparatingAxis = EdgeVecA ^ EdgeVecB;
+				if (SeparatingAxis.SizeSquared() < SMALL_NUMBER)
+				{
+					continue;
+				}
 
+				// ConvexAを分離軸に投影
+				float MinA, MaxA;
+				GetConvexProjectedRange(RigidBodyA.CollisionShape, SeparatingAxis, MinA, MaxA);
+
+				// ConvexBを分離軸に投影
+				float MinB, MaxB;
+				GetConvexProjectedRange(RigidBodyB.CollisionShape, ALocalToBLocal.TransformVector(SeparatingAxis), MinB, MaxB);
+				float DistanceAlongSeparationAxis = BLocalToALocal.GetTranslation() | SeparatingAxis;
+				MinB += DistanceAlongSeparationAxis;
+				MaxB += DistanceAlongSeparationAxis;
+
+				bool bSeparationPlaneExist = CheckSeparationPlaneExistAndUpdateMinPenetration(MinA, MaxA, MinB, MaxB, SeparatingAxis, SeparationAxisType::EdgeEdge, DistanceMin, AxisMin, SAType, bAxisFlip);
+				// 分離軸の存在判定と最も浅い貫通深度およびその分離軸の更新
+				if (bSeparationPlaneExist)
+				{
+					return false;
+				}
 			}
 		}
 
@@ -317,6 +336,7 @@ void ARigidBodiesCustomMesh::DetectCollision()
 			float PenetrationDepth;
 			FVector ContactPointA;
 			FVector ContactPointB;
+			// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえず省略
 			bool bContacting = DetectConvexConvexContact(RigidBodyA, RigidBodyB, Normal, PenetrationDepth, ContactPointA, ContactPointB);
 			if (bContacting)
 			{
