@@ -122,6 +122,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	}
 
 	ContactPairs.Reserve(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+	SolverBodies.Reserve(NumRigidBodies + 1);
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
@@ -458,10 +459,16 @@ void ARigidBodiesCustomMesh::DetectCollision()
 
 void ARigidBodiesCustomMesh::SolveConstraint()
 {
-	for (const FContactPair& ContactPair : ContactPairs)
+	SolverBodies.Reset();
+
+	for (int32 i = 0; i < RigidBodies.Num(); i++)
 	{
-		;
+		const FRigidBody& RigidBody = RigidBodies[i];
+		FSolverBody& SolverBody = SolverBodies[i];
+
+		SolverBody.Orientation = RigidBody.Orientation;
 	}
+
 }
 
 void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)

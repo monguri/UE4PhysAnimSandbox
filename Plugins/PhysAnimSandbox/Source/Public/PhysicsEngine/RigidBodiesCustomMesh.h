@@ -105,6 +105,16 @@ private:
 	};
 	TArray<FContactPair> ContactPairs;
 
+	struct FSolverBody
+	{
+		FVector DeltaLinearVelocity = FVector::ZeroVector;
+		FVector DeltaAngularVelocity = FVector::ZeroVector;
+		FQuat Orientation = FQuat::Identity;
+		float MassInv = 0.0f;
+		FMatrix InertiaInv = FMatrix::Identity; // 4x4ÇæÇ™3x3çsóÒÇ∆ÇµÇƒégÇ§
+	};
+	TArray<FSolverBody> SolverBodies;
+
 	/** Pointer to custom mesh component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCustomMeshComponent* DrawMesh;
