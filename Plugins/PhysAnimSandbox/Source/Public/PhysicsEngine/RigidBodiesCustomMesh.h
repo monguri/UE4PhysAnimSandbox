@@ -33,7 +33,7 @@ private:
 	int32 NumRigidBodies = 1;
 
 	UPROPERTY(EditAnywhere)
-	float Mass = 0.1f;
+	float Density = 0.1f;
 
 	UPROPERTY(EditAnywhere)
 	float InitPosRadius = 50.0f;
@@ -75,6 +75,8 @@ public:
 	{
 		FCollisionShape CollisionShape;
 
+		float Mass = 0.0f;
+		FMatrix Inertia = FMatrix::Identity;
 		FVector Position = FVector::ZeroVector;
 		FQuat Orientation = FQuat::Identity;
 		FVector LinearVelocity = FVector::ZeroVector;

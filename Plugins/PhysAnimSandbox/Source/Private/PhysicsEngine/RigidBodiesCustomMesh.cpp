@@ -28,6 +28,18 @@ namespace
 
 		return Point;
 	}
+
+	FMatrix CalculateInertiaBox(float Density, FVector Extent)
+	{
+		float Mass = Extent.X * Extent.Y * Extent.Z * Density;
+
+		FMatrix Ret = FMatrix::Identity;
+		Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
+		Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
+		Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+
+		return Ret;
+	}
 }
 
 void ARigidBodiesCustomMesh::BeginPlay()
@@ -99,6 +111,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.CollisionShape.Vertices = BoxVerticesFloor;
 	FloorRigidBody.CollisionShape.Edges = BoxEdges;
 	FloorRigidBody.CollisionShape.Facets = BoxFacets;
+	FloorRigidBody.Mass = FloorScale.X * FloorScale.Y * FloorScale.Z * Density; // フロアはStaticなので無限質量扱いにしてるので使っていない
+	FloorRigidBody.Inertia = CalculateInertiaBox(Density, FloorScale); // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
@@ -117,11 +131,14 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.CollisionShape.Vertices = BoxVerticesScaled;
 		CubeRigidBody.CollisionShape.Edges = BoxEdges;
 		CubeRigidBody.CollisionShape.Facets = BoxFacets;
+		CubeRigidBody.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
+		CubeRigidBody.Inertia = CalculateInertiaBox(Density, CubeScale);
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
 	ContactPairs.Reserve(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+
 	SolverBodies.SetNum(NumRigidBodies + 1);
 }
 
@@ -459,12 +476,26 @@ void ARigidBodiesCustomMesh::DetectCollision()
 
 void ARigidBodiesCustomMesh::SolveConstraint()
 {
-	for (int32 i = 0; i < RigidBodies.Num(); i++)
+	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
 		const FRigidBody& RigidBody = RigidBodies[i];
 		FSolverBody& SolverBody = SolverBodies[i];
 
 		SolverBody.Orientation = RigidBody.Orientation;
+		SolverBody.DeltaLinearVelocity = FVector::ZeroVector;
+		SolverBody.DeltaAngularVelocity = FVector::ZeroVector;
+
+		if (i == 0)
+		{
+			// フロアはStatic扱い
+			SolverBody.MassInv = 0.0f;
+			SolverBody.InertiaInv *= 0.0f; // 手軽に0行列にできるコンストラクタがないので乗算で0行列にする
+		}
+		else
+		{
+			SolverBody.MassInv = 1.0f / RigidBody.Mass;
+			SolverBody.InertiaInv *= (SolverBody.Orientation * RigidBody.Inertia).InverseFast();
+		}
 	}
 
 }
