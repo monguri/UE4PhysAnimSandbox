@@ -36,6 +36,12 @@ private:
 	float Density = 0.1f;
 
 	UPROPERTY(EditAnywhere)
+	float Friction = 1.0f;
+
+	UPROPERTY(EditAnywhere)
+	float Restitution = 1.0f;
+
+	UPROPERTY(EditAnywhere)
 	float InitPosRadius = 50.0f;
 
 	UPROPERTY(EditAnywhere)
@@ -75,7 +81,9 @@ public:
 	{
 		FCollisionShape CollisionShape;
 
-		float Mass = 0.0f;
+		float Mass = 1.0f;
+		float Friction = 1.0f;
+		float Restitution = 1.0f;
 		FMatrix Inertia = FMatrix::Identity;
 		FVector Position = FVector::ZeroVector;
 		FQuat Orientation = FQuat::Identity;

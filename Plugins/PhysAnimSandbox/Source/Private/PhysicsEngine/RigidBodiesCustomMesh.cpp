@@ -113,6 +113,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.CollisionShape.Facets = BoxFacets;
 	FloorRigidBody.Mass = FloorScale.X * FloorScale.Y * FloorScale.Z * Density; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = CalculateInertiaBox(Density, FloorScale); // フロアはStaticなので無限質量扱いにしてるので使っていない
+	FloorRigidBody.Friction = Friction;
+	FloorRigidBody.Restitution = Restitution;
 	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
@@ -133,6 +135,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.CollisionShape.Facets = BoxFacets;
 		CubeRigidBody.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
 		CubeRigidBody.Inertia = CalculateInertiaBox(Density, CubeScale);
+		CubeRigidBody.Friction = Friction;
+		CubeRigidBody.Restitution = Restitution;
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
@@ -468,6 +472,7 @@ void ARigidBodiesCustomMesh::DetectCollision()
 			bool bContacting = DetectConvexConvexContact(RigidBodyA, RigidBodyB, Normal, PenetrationDepth, ContactPointA, ContactPointB);
 			if (bContacting)
 			{
+				// コンタクトペア情報はキャッシュしてない。毎フレーム作り直している
 				ContactPairs.Emplace(i, j, ContactPointA, ContactPointB, Normal, PenetrationDepth);
 			}
 		}
@@ -476,6 +481,7 @@ void ARigidBodiesCustomMesh::DetectCollision()
 
 void ARigidBodiesCustomMesh::SolveConstraint()
 {
+	// コンストレイントソルバー用の剛体ワークデータを設定
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
 		const FRigidBody& RigidBody = RigidBodies[i];
@@ -498,6 +504,21 @@ void ARigidBodiesCustomMesh::SolveConstraint()
 		}
 	}
 
+	// コリジョンコンストレイントのセットアップ
+	for (FContactPair& ContactPair : ContactPairs)
+	{
+		const FRigidBody& RigidBodyA = RigidBodies[ContactPair.RigidBodyA_Idx];
+		const FRigidBody& RigidBodyB = RigidBodies[ContactPair.RigidBodyB_Idx];
+		FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
+		FSolverBody& SolverBodyB = SolverBodies[ContactPair.RigidBodyB_Idx];
+	}
+
+	// 速度を更新
+	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	{
+		RigidBodies[i].LinearVelocity += SolverBodies[i].DeltaLinearVelocity;
+		RigidBodies[i].AngularVelocity += SolverBodies[i].DeltaAngularVelocity;
+	}
 }
 
 void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
