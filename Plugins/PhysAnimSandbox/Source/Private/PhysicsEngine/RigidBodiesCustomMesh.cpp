@@ -153,7 +153,7 @@ void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
 	if (DeltaSeconds > KINDA_SMALL_NUMBER)
 	{
 		// DeltaSecondsの値の変動に関わらず、シミュレーションに使うサブステップタイムは固定とする
-		float SubStepDeltaSeconds = 1.0f / FrameRate / NumIterations;
+		float SubStepDeltaSeconds = 1.0f / FrameRate;
 
 		for (int32 i = 0; i < NumIterations; ++i)
 		{
@@ -511,6 +511,11 @@ void ARigidBodiesCustomMesh::SolveConstraint()
 		const FRigidBody& RigidBodyB = RigidBodies[ContactPair.RigidBodyB_Idx];
 		FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
 		FSolverBody& SolverBodyB = SolverBodies[ContactPair.RigidBodyB_Idx];
+	}
+
+	// コンストレイントの反復演算
+	for (int32 Itr = 0; Itr < NumIterations; Itr++)
+	{
 	}
 
 	// 速度を更新

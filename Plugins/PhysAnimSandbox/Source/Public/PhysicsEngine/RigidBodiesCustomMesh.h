@@ -21,7 +21,7 @@ private:
 	int32 NumThreads = 4;
 
 	UPROPERTY(EditAnywhere)
-	int32 NumIterations = 1;
+	int32 NumIterations = 10;
 
 	UPROPERTY(EditAnywhere)
 	float FrameRate = 60.0f;
