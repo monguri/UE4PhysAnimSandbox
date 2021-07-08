@@ -141,7 +141,18 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
-	ContactPairs.Reserve(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+	ContactPairs.SetNum(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+
+	int32 ContactPairIdx = 0;
+	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	{
+		for (int32 j = i + 1; j < NumRigidBodies + 1; j++)
+		{
+			ContactPairs[ContactPairIdx].RigidBodyA_Idx = i;
+			ContactPairs[ContactPairIdx].RigidBodyB_Idx = j;
+			ContactPairIdx++;
+		}
+	}
 
 	SolverBodies.SetNum(NumRigidBodies + 1);
 }
@@ -166,8 +177,6 @@ void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
 
 void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 {
-	ContactPairs.Reset();
-
 	//TODO: コンタクトペア配列にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
 	DetectCollision();
 
@@ -455,12 +464,17 @@ namespace
 
 void ARigidBodiesCustomMesh::DetectCollision()
 {
+	int32 ContactPairIdx = 0;
+
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
 		for (int32 j = i + 1; j < NumRigidBodies + 1; j++)
 		{
 			const FRigidBody& RigidBodyA = RigidBodies[i];
 			const FRigidBody& RigidBodyB = RigidBodies[j];
+
+			// TODO:本来はブロードフェーズ段階でリフレッシュする
+			ContactPairs[ContactPairIdx].Refresh(RigidBodyA.Position, RigidBodyA.Orientation, RigidBodyB.Position, RigidBodyB.Orientation);
 
 			// TODO:box同士なので、ひとつの面に2つのトライアングルで扱う必要なく、4頂点の1面で扱ったほうがエッジも減るし計算量減らせるが
 			// とりあえずconvex-convexで計算する
@@ -473,8 +487,10 @@ void ARigidBodiesCustomMesh::DetectCollision()
 			if (bContacting)
 			{
 				// コンタクトペア情報はキャッシュしてない。毎フレーム作り直している
-				ContactPairs.Emplace(i, j, ContactPointA, ContactPointB, Normal, PenetrationDepth);
+				ContactPairs[ContactPairIdx].AddContact(ContactPointA, ContactPointB, Normal, PenetrationDepth);
 			}
+
+			ContactPairIdx++; 	
 		}
 	}
 }
@@ -564,5 +580,16 @@ void ARigidBodiesCustomMesh::ApplyRigidBodiesToMeshDrawing()
 	}
 
 	DrawMesh->SetCustomMeshTriangles(CustomMeshTris);
+}
+
+
+void ARigidBodiesCustomMesh::FContactPair::Refresh(const FVector& PositionA, const FQuat& OrientationA, const FVector& PositionB, const FQuat& OrientationB)
+{
+	// Refresh()内でNoContactにするかKeepのままかを判定する
+}
+
+void ARigidBodiesCustomMesh::FContactPair::AddContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal, float PenetrationDepth)
+{
+	// AddContact内でNewなのかKeepなのか判定する
 }
 

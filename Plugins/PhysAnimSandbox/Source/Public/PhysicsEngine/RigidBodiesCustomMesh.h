@@ -95,24 +95,34 @@ private:
 	TArray<FRigidBody> RigidBodies;
 	int32 NumThreadRBs = 0;
 
-	struct FContactPair
+	struct FContact
 	{
-		int32 RigidBodyA_Idx;
-		int32 RigidBodyB_Idx;
 		FVector ContactPointA;
 		FVector ContactPointB;
 		FVector Normal;
 		float PenetrationDepth;
-
-		FContactPair(int32 _RigidBodyA_Idx, int32 _RigidBodyB_Idx, const FVector& _ContactPointA, const FVector& _ContactPointB, const FVector& _Normal, float _PenetrationDepth) :
-			RigidBodyA_Idx(_RigidBodyA_Idx)
-			, RigidBodyB_Idx(_RigidBodyB_Idx)
-			, ContactPointA(_ContactPointA)
-			, ContactPointB(_ContactPointB)
-			, Normal(_Normal)
-			, PenetrationDepth(_PenetrationDepth)
-		{}
 	};
+
+	enum class EContactPairState : uint8
+	{
+		NoContact,
+		New,
+		Keep,
+	};
+
+	struct FContactPair
+	{
+		EContactPairState State = EContactPairState::NoContact; 
+		int32 RigidBodyA_Idx = 0;
+		int32 RigidBodyB_Idx = 0;
+
+		int32 NumContact = 0;
+		FContact Contacts[4];
+
+		void Refresh(const FVector& PositionA, const FQuat& OrientationA, const FVector& PositionB, const FQuat& OrientationB);
+		void AddContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal, float PenetrationDepth);
+	};
+
 	TArray<FContactPair> ContactPairs;
 
 	struct FSolverBody
