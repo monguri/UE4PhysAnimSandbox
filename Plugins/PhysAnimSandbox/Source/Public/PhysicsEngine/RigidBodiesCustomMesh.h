@@ -97,10 +97,10 @@ private:
 
 	struct FContact
 	{
-		FVector ContactPointA;
-		FVector ContactPointB;
-		FVector Normal;
-		float PenetrationDepth;
+		FVector ContactPointA; // 剛体Aのローカル座標での剛体A側のコンタクトポイント
+		FVector ContactPointB; // 剛体Bのローカル座標での剛体B側のコンタクトポイント
+		FVector Normal; // ワールド座標。Aを反発させる方向にとる。
+		float PenetrationDepth; // 貫通深度。貫通している場合は負。
 	};
 
 	enum class EContactPairState : uint8
@@ -121,6 +121,9 @@ private:
 
 		void Refresh(const FVector& PositionA, const FQuat& OrientationA, const FVector& PositionB, const FQuat& OrientationB);
 		void AddContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal, float PenetrationDepth);
+		void RemoveContact(int32 Index);
+		int32 FindNearestContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal);
+		int32 ChooseSwapContact(const FVector& NewPointA, float NewPenetrationDepth);
 	};
 
 	TArray<FContactPair> ContactPairs;

@@ -585,11 +585,210 @@ void ARigidBodiesCustomMesh::ApplyRigidBodiesToMeshDrawing()
 
 void ARigidBodiesCustomMesh::FContactPair::Refresh(const FVector& PositionA, const FQuat& OrientationA, const FVector& PositionB, const FQuat& OrientationB)
 {
-	// Refresh()内でNoContactにするかKeepのままかを判定する
+	// 前フレームでNewあるいはKeepだったものをNoContactにするかKeepにするか判定する
+	// NoContacrのものをNewにするのはAddContact()の役割
+	static const float CONTACT_THRESHOLD_NORMAL = 1.0f;
+	static const float CONTACT_SQ_THRESHOLD_TANGENT = 5.0f;
+
+	switch (State)
+	{
+	case EContactPairState::NoContact:
+		// 何もしない
+		break;
+	case EContactPairState::New:
+	case EContactPairState::Keep:
+		{
+			// 既存コンタクトポイントがコンタクトし続けているかチェックし、してなければ削除
+			for (int32 i = 0; i < NumContact; ++i)
+			{
+				const FVector& Normal = Contacts[i].Normal;
+				const FVector& ContactPointA = PositionA + OrientationA * Contacts[i].ContactPointA;
+				const FVector& ContactPointB = PositionB + OrientationB * Contacts[i].ContactPointB;
+
+				// 貫通深度の更新。プラスになり閾値を超えたらコンタクトポイント削除。
+				float PenetrationDepth = Normal | (ContactPointA - ContactPointB);
+				if (PenetrationDepth > CONTACT_THRESHOLD_NORMAL)
+				{
+					RemoveContact(i);
+					i--;
+					continue;
+				}
+				Contacts[i].PenetrationDepth = PenetrationDepth;
+
+				// 深度方向を除去した距離が閾値を超えたらコンタクトポイント削除。
+				float TangentDistance = ((ContactPointA - PenetrationDepth * Normal) - ContactPointB).SizeSquared();
+				if (TangentDistance > CONTACT_SQ_THRESHOLD_TANGENT)
+				{
+					RemoveContact(i);
+					i--;
+					continue;
+				}
+			}
+
+			// 更新されたコンタクト数から状態更新
+			if (NumContact == 0)
+			{
+				State = EContactPairState::NoContact;
+			}
+			else
+			{
+				State = EContactPairState::Keep;
+			}
+		}
+		break;
+	default:
+		check(false);
+		break;
+	}
 }
 
 void ARigidBodiesCustomMesh::FContactPair::AddContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal, float PenetrationDepth)
 {
 	// AddContact内でNewなのかKeepなのか判定する
+
+	switch (State)
+	{
+	case EContactPairState::NoContact:
+		{
+			check(NumContact == 0);
+			NumContact = 1;
+			Contacts[0].ContactPointA = ContactPointA;
+			Contacts[0].ContactPointB = ContactPointB;
+			Contacts[0].Normal = Normal;
+			Contacts[0].PenetrationDepth = PenetrationDepth;
+			State = EContactPairState::New;
+		}
+		break;
+	case EContactPairState::Keep:
+		{
+			int32 Idx = FindNearestContact(ContactPointA, ContactPointB, Normal);
+			if (Idx < 0) // 同じとみなせるコンタクトポイントがなかったとき
+			{
+				if (NumContact < 4) // TODO:マジックナンバー
+				{
+					// 最後の要素に追加
+					Idx = NumContact;
+					NumContact++;
+				}
+				else
+				{
+					// 要素を選んで交換。
+					Idx = ChooseSwapContact(ContactPointA, PenetrationDepth);
+				}
+			}
+
+			Contacts[Idx].ContactPointA = ContactPointA;
+			Contacts[Idx].ContactPointB = ContactPointB;
+			Contacts[Idx].Normal = Normal;
+			Contacts[Idx].PenetrationDepth = PenetrationDepth;
+		}
+		break;
+	case EContactPairState::New:
+		// NewにするのはAddContact()内のみなのでここでNewになっているのはありえない
+	default:
+		check(false);
+		break;
+	}
+}
+
+void ARigidBodiesCustomMesh::FContactPair::RemoveContact(int32 Index)
+{
+	// 最後の要素をもってくる。ソートはAddContact()で別途行う。
+	Contacts[Index] = Contacts[NumContact - 1];
+	NumContact--;
+}
+
+int32 ARigidBodiesCustomMesh::FContactPair::FindNearestContact(const FVector& ContactPointA, const FVector& ContactPointB, const FVector& Normal)
+{
+	static const float CONTACT_SAME_POINT_SQ_THRESHOLD = 1.0f; // TODO:EasyPhysicsではMKS単位系で0.01にしているがそれだと2乗でない距離は10cmなので大きすぎると思う
+	int32 NearestIdx = -1;
+
+	float MinDiff = CONTACT_SAME_POINT_SQ_THRESHOLD;
+	for (int32 i = 0; i < NumContact; ++i)
+	{
+		float DiffA = (ContactPointA - Contacts[i].ContactPointA).SizeSquared();
+		float DiffB = (ContactPointB - Contacts[i].ContactPointB).SizeSquared();
+		if (DiffA < MinDiff && DiffB < MinDiff && (Normal | Contacts[i].Normal) > 0.99f)
+		{
+			MinDiff = FMath::Max(DiffA, DiffB);
+			NearestIdx = i;
+		}
+	}
+
+	return NearestIdx;
+}
+
+namespace
+{
+	float CalculateAreaSquared(const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3)
+	{
+		// 4点で決まる面積の中で最大のものを選ぶ
+		float AreqSqA = ((P0 - P1) ^ (P2 - P3)).SizeSquared();
+		float AreqSqB = ((P0 - P2) ^ (P1 - P3)).SizeSquared();
+		float AreqSqC = ((P0 - P3) ^ (P1 - P2)).SizeSquared();
+		return FMath::Max(FMath::Max(AreqSqA, AreqSqB), AreqSqC);
+	}
+}
+
+int32 ARigidBodiesCustomMesh::FContactPair::ChooseSwapContact(const FVector& NewPointA, float NewPenetrationDepth)
+{
+	check(NumContact == 4);
+
+	int32 MaxPenetrationIdx = -1;
+	float MaxPenetration = NewPenetrationDepth;
+
+	// 最も深い衝突点は排除対象から外す
+	for (int32 i = 0; i < NumContact; ++i)
+	{
+		if (Contacts[i].PenetrationDepth < MaxPenetration)
+		{
+			MaxPenetrationIdx = i;
+			MaxPenetration = Contacts[i].PenetrationDepth;
+		}
+	}
+
+	// 各点を除いたときの衝突点が作る面積のうち最大になるものを選択
+	FVector Point[4] = {
+		Contacts[0].ContactPointA,
+		Contacts[1].ContactPointA,
+		Contacts[2].ContactPointA,
+		Contacts[3].ContactPointA,
+	};
+
+	float AreaSq[4] = { 0.0f };
+
+	if (MaxPenetrationIdx != 0)
+	{
+		AreaSq[0] = CalculateAreaSquared(NewPointA, Point[1], Point[2], Point[3]);
+	}
+
+	if (MaxPenetrationIdx != 1)
+	{
+		AreaSq[1] = CalculateAreaSquared(NewPointA, Point[0], Point[2], Point[3]);
+	}
+
+	if (MaxPenetrationIdx != 2)
+	{
+		AreaSq[2] = CalculateAreaSquared(NewPointA, Point[0], Point[1], Point[3]);
+	}
+
+	if (MaxPenetrationIdx != 3)
+	{
+		AreaSq[3] = CalculateAreaSquared(NewPointA, Point[0], Point[1], Point[2]);
+	}
+
+	int32 MaxIndex = 0;
+	float MaxArea = AreaSq[0];
+
+	for (int32 i = 1; i < 4; ++i)
+	{
+		if (AreaSq[i] > MaxArea)
+		{
+			MaxIndex = i;
+			MaxArea = AreaSq[i];
+		}
+	}
+
+	return MaxIndex;
 }
 
