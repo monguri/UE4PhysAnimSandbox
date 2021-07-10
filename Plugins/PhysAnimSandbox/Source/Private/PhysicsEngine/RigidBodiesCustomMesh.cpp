@@ -141,7 +141,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
-	ContactPairs.SetNum(((NumRigidBodies + 1) * (NumRigidBodies + 2)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+	ContactPairs.SetNum(((NumRigidBodies + 1) * NumRigidBodies) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
 
 	int32 ContactPairIdx = 0;
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
