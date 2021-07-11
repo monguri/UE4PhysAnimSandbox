@@ -42,6 +42,12 @@ private:
 	float Restitution = 1.0f;
 
 	UPROPERTY(EditAnywhere)
+	float ContactBias = 0.1f;
+
+	UPROPERTY(EditAnywhere)
+	float ContactSlop = 0.1f;
+
+	UPROPERTY(EditAnywhere)
 	float InitPosRadius = 50.0f;
 
 	UPROPERTY(EditAnywhere)
@@ -95,12 +101,36 @@ private:
 	TArray<FRigidBody> RigidBodies;
 	int32 NumThreadRBs = 0;
 
+	struct FConstraint
+	{
+		FVector Axis; // 拘束軸
+		float JacobianDiagInv; // 拘束式の分母
+		float RHS; // 初期拘束インパルス
+		float LowerLimit; // 拘束インパルスの下限
+		float UpperLimit; // 拘束インパルスの上限
+		float AccumImpluse = 0.0f; // 蓄積された拘束インパルス
+
+		void Reset()
+		{
+			AccumImpluse = 0.0f;
+		}
+	};
+
 	struct FContact
 	{
 		FVector ContactPointA; // 剛体Aのローカル座標での剛体A側のコンタクトポイント
 		FVector ContactPointB; // 剛体Bのローカル座標での剛体B側のコンタクトポイント
 		FVector Normal; // ワールド座標。Aを反発させる方向にとる。
 		float PenetrationDepth; // 貫通深度。貫通している場合は負。
+		FConstraint Constraints[3];
+
+		void Reset()
+		{
+			for (int32 i = 0; i < 3; ++i)
+			{
+				Constraints[i].Reset();
+			}
+		}
 	};
 
 	enum class EContactPairState : uint8
@@ -146,7 +176,7 @@ private:
 
 	void Simulate(float DeltaSeconds);
 	void DetectCollision();
-	void SolveConstraint();
+	void SolveConstraint(float DeltaSeconds);
 	void Integrate(int32 RBIdx, float DeltaSeconds);
 	void ApplyRigidBodiesToMeshDrawing();
 };

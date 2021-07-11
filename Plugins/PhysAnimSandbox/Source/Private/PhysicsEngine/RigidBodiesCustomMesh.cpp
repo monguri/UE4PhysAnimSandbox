@@ -181,7 +181,7 @@ void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 	DetectCollision();
 
 	//TODO: 同じ剛体にマルチスレッドからアクセスするのが危険なのでとりあえずシングルスレッド
-	SolveConstraint();
+	SolveConstraint(DeltaSeconds);
 
 	ParallelFor(NumThreads,
 		[this, DeltaSeconds](int32 ThreadIndex)
@@ -510,7 +510,7 @@ namespace
 	}
 }
 
-void ARigidBodiesCustomMesh::SolveConstraint()
+void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 {
 	// コンストレイントソルバー用の剛体ワークデータを設定
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
@@ -567,6 +567,40 @@ void ARigidBodiesCustomMesh::SolveConstraint()
 			{
 				// 新規に衝突したときのみ反発力を発生させる
 				ContactRestitution = (RigidBodyA.Restitution + RigidBodyB.Restitution) * 0.5f;
+			}
+
+			// Normal
+			{
+				const FVector& Axis = Contact.Normal;
+				Contact.Constraints[0].Axis = Axis;
+				Contact.Constraints[0].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
+				Contact.Constraints[0].RHS = -(1.0f + ContactRestitution) * (RelativeVelocity | Axis); // velocity error
+				Contact.Constraints[0].RHS -= (ContactBias * FMath::Min(0.0f, Contact.PenetrationDepth + ContactSlop)) / DeltaSeconds;
+				Contact.Constraints[0].RHS *= Contact.Constraints[0].JacobianDiagInv;
+				Contact.Constraints[0].LowerLimit = 0.0f;
+				Contact.Constraints[0].UpperLimit = FLT_MAX;
+			}
+
+			// Tangent1
+			{
+				const FVector& Axis = Tangent1;
+				Contact.Constraints[1].Axis = Axis;
+				Contact.Constraints[1].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
+				Contact.Constraints[1].RHS = -RelativeVelocity | Axis; // velocity error
+				Contact.Constraints[1].RHS *= Contact.Constraints[1].JacobianDiagInv;
+				Contact.Constraints[1].LowerLimit = 0.0f;
+				Contact.Constraints[1].UpperLimit = 0.0f;
+			}
+
+			// Tangent2
+			{
+				const FVector& Axis = Tangent2;
+				Contact.Constraints[2].Axis = Axis;
+				Contact.Constraints[2].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
+				Contact.Constraints[2].RHS = -RelativeVelocity | Axis; // velocity error
+				Contact.Constraints[2].RHS *= Contact.Constraints[2].JacobianDiagInv;
+				Contact.Constraints[2].LowerLimit = 0.0f;
+				Contact.Constraints[2].UpperLimit = 0.0f;
 			}
 		}
 	}
@@ -698,6 +732,7 @@ void ARigidBodiesCustomMesh::FContactPair::AddContact(const FVector& ContactPoin
 			Contacts[0].ContactPointB = ContactPointB;
 			Contacts[0].Normal = Normal;
 			Contacts[0].PenetrationDepth = PenetrationDepth;
+			Contacts[0].Reset();
 			State = EContactPairState::New;
 		}
 		break;
@@ -717,6 +752,8 @@ void ARigidBodiesCustomMesh::FContactPair::AddContact(const FVector& ContactPoin
 					// 要素を選んで交換。
 					Idx = ChooseSwapContact(ContactPointA, PenetrationDepth);
 				}
+
+				Contacts[Idx].Reset();
 			}
 
 			Contacts[Idx].ContactPointA = ContactPointA;
