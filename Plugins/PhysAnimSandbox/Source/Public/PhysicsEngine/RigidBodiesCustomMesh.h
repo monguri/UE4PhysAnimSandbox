@@ -116,6 +116,8 @@ private:
 		int32 RigidBodyA_Idx = 0;
 		int32 RigidBodyB_Idx = 0;
 
+		float Friction = 0.0f;
+
 		int32 NumContact = 0;
 		FContact Contacts[4];
 

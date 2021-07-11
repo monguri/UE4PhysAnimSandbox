@@ -495,6 +495,21 @@ void ARigidBodiesCustomMesh::DetectCollision()
 	}
 }
 
+namespace
+{
+	FMatrix CrossMatrix(const FVector& V)
+	{
+		// FMatrix.M[][]はM[Row][Column]だが、コンストラクタでは各ベクトルが同じRowに入る
+		FMatrix Ret(
+			FVector(0.0f, -V.Z, V.Y),
+			FVector(V.Z, 0.0f, -V.X),
+			FVector(-V.Y, V.X, 0.0f),
+			FVector(0.0f, 0.0f, 0.0f)
+		);
+		return Ret;
+	}
+}
+
 void ARigidBodiesCustomMesh::SolveConstraint()
 {
 	// コンストレイントソルバー用の剛体ワークデータを設定
@@ -527,6 +542,33 @@ void ARigidBodiesCustomMesh::SolveConstraint()
 		const FRigidBody& RigidBodyB = RigidBodies[ContactPair.RigidBodyB_Idx];
 		FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
 		FSolverBody& SolverBodyB = SolverBodies[ContactPair.RigidBodyB_Idx];
+
+		ContactPair.Friction = FMath::Sqrt(RigidBodyA.Friction * RigidBodyB.Friction);
+
+		for (int32 i = 0; i < ContactPair.NumContact; ++i)
+		{
+			FContact& Contact = ContactPair.Contacts[i];
+
+			const FVector& RotatedPointA = SolverBodyA.Orientation * Contact.ContactPointA;
+			const FVector& RotatedPointB = SolverBodyB.Orientation * Contact.ContactPointB;
+
+			// FMatrixにはoperator+()はあるがoperator-()がない。
+			const FMatrix& K = FMatrix::Identity * (SolverBodyA.MassInv + SolverBodyB.MassInv) + (CrossMatrix(RotatedPointA) * SolverBodyA.InertiaInv * CrossMatrix(RotatedPointA) * -1) + (CrossMatrix(RotatedPointB) * SolverBodyB.InertiaInv * CrossMatrix(RotatedPointB) * -1);
+
+			const FVector& VelocityA = RigidBodyA.LinearVelocity + RigidBodyA.AngularVelocity ^ RotatedPointA; // TODO:角速度による速度ってrxwじゃなかったっけ？
+			const FVector& VelocityB = RigidBodyB.LinearVelocity + RigidBodyB.AngularVelocity ^ RotatedPointB;
+			const FVector& RelativeVelocity = VelocityA - VelocityB;
+
+			FVector Tangent1, Tangent2;
+			Contact.Normal.FindBestAxisVectors(Tangent1, Tangent2);
+
+			float ContactRestitution = 0.0f;
+			if (ContactPair.State == EContactPairState::New)
+			{
+				// 新規に衝突したときのみ反発力を発生させる
+				ContactRestitution = (RigidBodyA.Restitution + RigidBodyB.Restitution) * 0.5f;
+			}
+		}
 	}
 
 	// コンストレイントの反復演算
