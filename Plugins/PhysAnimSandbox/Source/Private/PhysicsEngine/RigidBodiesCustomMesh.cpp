@@ -371,7 +371,7 @@ namespace
 
 			for (const ARigidBodiesCustomMesh::FFacet& FacetB : RigidBodyB.CollisionShape.Facets)
 			{
-				float FacetBCheckValue = FacetB.Normal | ALocalToBLocal.TransformVector(AxisMin);
+				float FacetBCheckValue = FacetB.Normal | (ALocalToBLocal.TransformVector(AxisMin));
 				if (FacetBCheckValue < 0.0f)
 				{
 					// 判定軸と逆向きの面はSeparationTypeがなんであろうと評価しない
@@ -555,8 +555,8 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			// FMatrixにはoperator+()はあるがoperator-()がない。
 			const FMatrix& K = FMatrix::Identity * (SolverBodyA.MassInv + SolverBodyB.MassInv) + (CrossMatrix(RotatedPointA) * SolverBodyA.InertiaInv * CrossMatrix(RotatedPointA) * -1) + (CrossMatrix(RotatedPointB) * SolverBodyB.InertiaInv * CrossMatrix(RotatedPointB) * -1);
 
-			const FVector& VelocityA = RigidBodyA.LinearVelocity + RigidBodyA.AngularVelocity ^ RotatedPointA; // TODO:角速度による速度ってrxwじゃなかったっけ？
-			const FVector& VelocityB = RigidBodyB.LinearVelocity + RigidBodyB.AngularVelocity ^ RotatedPointB;
+			const FVector& VelocityA = RigidBodyA.LinearVelocity + (RigidBodyA.AngularVelocity ^ RotatedPointA); // TODO:角速度による速度ってrxwじゃなかったっけ？
+			const FVector& VelocityB = RigidBodyB.LinearVelocity + (RigidBodyB.AngularVelocity ^ RotatedPointB);
 			const FVector& RelativeVelocity = VelocityA - VelocityB;
 
 			FVector Tangent1, Tangent2;
@@ -605,9 +605,18 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		}
 	}
 
+	// TDOO:ウォームスタートの実装は後回しにする
+
 	// コンストレイントの反復演算
 	for (int32 Itr = 0; Itr < NumIterations; Itr++)
 	{
+		for (FContactPair& ContactPair : ContactPairs)
+		{
+			for (int32 i = 0; i < ContactPair.NumContact; ++i)
+			{
+				FContact& Contact = ContactPair.Contacts[i];
+			}
+		}
 	}
 
 	// 速度を更新
