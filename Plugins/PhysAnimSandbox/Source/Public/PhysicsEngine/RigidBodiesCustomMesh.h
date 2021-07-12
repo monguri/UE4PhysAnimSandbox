@@ -108,11 +108,11 @@ private:
 		float RHS; // 初期拘束インパルス
 		float LowerLimit; // 拘束インパルスの下限
 		float UpperLimit; // 拘束インパルスの上限
-		float AccumImpluse = 0.0f; // 蓄積された拘束インパルス
+		float AccumImpulse = 0.0f; // 蓄積された拘束インパルス
 
 		void Reset()
 		{
-			AccumImpluse = 0.0f;
+			AccumImpulse = 0.0f;
 		}
 	};
 

@@ -560,7 +560,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			const FVector& RelativeVelocity = VelocityA - VelocityB;
 
 			FVector Tangent1, Tangent2;
-			Contact.Normal.FindBestAxisVectors(Tangent1, Tangent2);
+			Contact.Normal.FindBestAxisVectors(Tangent1, Tangent2); // ç∂éËånÇ≈åvéZÇµÇƒÇ¢ÇÈÇÃÇ…íçà”
 
 			float ContactRestitution = 0.0f;
 			if (ContactPair.State == EContactPairState::New)
@@ -575,7 +575,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 				Contact.Constraints[0].Axis = Axis;
 				Contact.Constraints[0].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
 				Contact.Constraints[0].RHS = -(1.0f + ContactRestitution) * (RelativeVelocity | Axis); // velocity error
-				Contact.Constraints[0].RHS -= (ContactBias * FMath::Min(0.0f, Contact.PenetrationDepth + ContactSlop)) / DeltaSeconds;
+				Contact.Constraints[0].RHS -= (ContactBias * FMath::Min(0.0f, Contact.PenetrationDepth + ContactSlop)) / DeltaSeconds; // position error
 				Contact.Constraints[0].RHS *= Contact.Constraints[0].JacobianDiagInv;
 				Contact.Constraints[0].LowerLimit = 0.0f;
 				Contact.Constraints[0].UpperLimit = FLT_MAX;
@@ -586,7 +586,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 				const FVector& Axis = Tangent1;
 				Contact.Constraints[1].Axis = Axis;
 				Contact.Constraints[1].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
-				Contact.Constraints[1].RHS = -RelativeVelocity | Axis; // velocity error
+				Contact.Constraints[1].RHS = -RelativeVelocity | Axis;
 				Contact.Constraints[1].RHS *= Contact.Constraints[1].JacobianDiagInv;
 				Contact.Constraints[1].LowerLimit = 0.0f;
 				Contact.Constraints[1].UpperLimit = 0.0f;
@@ -597,7 +597,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 				const FVector& Axis = Tangent2;
 				Contact.Constraints[2].Axis = Axis;
 				Contact.Constraints[2].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
-				Contact.Constraints[2].RHS = -RelativeVelocity | Axis; // velocity error
+				Contact.Constraints[2].RHS = -RelativeVelocity | Axis;
 				Contact.Constraints[2].RHS *= Contact.Constraints[2].JacobianDiagInv;
 				Contact.Constraints[2].LowerLimit = 0.0f;
 				Contact.Constraints[2].UpperLimit = 0.0f;
@@ -612,9 +612,75 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	{
 		for (FContactPair& ContactPair : ContactPairs)
 		{
+			FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
+			FSolverBody& SolverBodyB = SolverBodies[ContactPair.RigidBodyB_Idx];
+
 			for (int32 i = 0; i < ContactPair.NumContact; ++i)
 			{
 				FContact& Contact = ContactPair.Contacts[i];
+
+				const FVector& RotatedPointA = SolverBodyA.Orientation * Contact.ContactPointA;
+				const FVector& RotatedPointB = SolverBodyB.Orientation * Contact.ContactPointB;
+
+				// Normal
+				{
+					FConstraint& Constraint = Contact.Constraints[0];
+					float DeltaImpulse = Constraint.RHS;
+					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
+					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
+
+					float OldImpulse = Constraint.AccumImpulse;
+					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
+					DeltaImpulse = Constraint.AccumImpulse - OldImpulse;
+
+					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
+					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
+					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+				}
+
+				float MaxFriction = ContactPair.Friction * FMath::Abs(Contact.Constraints[0].AccumImpulse);
+				Contact.Constraints[1].LowerLimit -= -MaxFriction;
+				Contact.Constraints[1].UpperLimit += -MaxFriction;
+				Contact.Constraints[2].LowerLimit -= -MaxFriction;
+				Contact.Constraints[2].UpperLimit += -MaxFriction;
+
+				// Tangent1
+				{
+					FConstraint& Constraint = Contact.Constraints[1];
+					float DeltaImpulse = Constraint.RHS;
+					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
+					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
+
+					float OldImpulse = Constraint.AccumImpulse;
+					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
+					DeltaImpulse = Constraint.AccumImpulse - OldImpulse;
+
+					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
+					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
+					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+				}
+
+				// Tangent2
+				{
+					FConstraint& Constraint = Contact.Constraints[2];
+					float DeltaImpulse = Constraint.RHS;
+					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
+					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
+
+					float OldImpulse = Constraint.AccumImpulse;
+					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
+					DeltaImpulse = Constraint.AccumImpulse - OldImpulse;
+
+					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
+					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
+					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+				}
 			}
 		}
 	}
@@ -636,12 +702,12 @@ void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 	}
 
 	RigidBodies[RBIdx].LinearVelocity += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
-	// TODO:âºÅBî≠éUÇµÇ»Ç¢ÇÊÇ§Ç…
-	RigidBodies[RBIdx].LinearVelocity.Z = FMath::Max(RigidBodies[RBIdx].LinearVelocity.Z, -1000.0f);
+	//// TODO:âºÅBî≠éUÇµÇ»Ç¢ÇÊÇ§Ç…
+	//RigidBodies[RBIdx].LinearVelocity.Z = FMath::Max(RigidBodies[RBIdx].LinearVelocity.Z, -1000.0f);
 
 	RigidBodies[RBIdx].Position += RigidBodies[RBIdx].LinearVelocity * DeltaSeconds;
-	// TODO:âºÅBî≠éUÇµÇ»Ç¢ÇÊÇ§Ç…
-	RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, -100.0f);
+	//// TODO:âºÅBî≠éUÇµÇ»Ç¢ÇÊÇ§Ç…
+	//RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, -100.0f);
 
 	const FQuat& OrientationDifferential = FQuat(RigidBodies[RBIdx].AngularVelocity.X, RigidBodies[RBIdx].AngularVelocity.Y, RigidBodies[RBIdx].AngularVelocity.Z, 0.0f) * RigidBodies[RBIdx].Orientation * 0.5f;
 	RigidBodies[RBIdx].Orientation = (RigidBodies[RBIdx].Orientation + OrientationDifferential * DeltaSeconds).GetNormalized();
