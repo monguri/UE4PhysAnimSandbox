@@ -641,10 +641,10 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 				}
 
 				float MaxFriction = ContactPair.Friction * FMath::Abs(Contact.Constraints[0].AccumImpulse);
-				Contact.Constraints[1].LowerLimit -= -MaxFriction;
-				Contact.Constraints[1].UpperLimit += -MaxFriction;
-				Contact.Constraints[2].LowerLimit -= -MaxFriction;
-				Contact.Constraints[2].UpperLimit += -MaxFriction;
+				Contact.Constraints[1].LowerLimit = -MaxFriction;
+				Contact.Constraints[1].UpperLimit = MaxFriction;
+				Contact.Constraints[2].LowerLimit = -MaxFriction;
+				Contact.Constraints[2].UpperLimit = MaxFriction;
 
 				// Tangent1
 				{
