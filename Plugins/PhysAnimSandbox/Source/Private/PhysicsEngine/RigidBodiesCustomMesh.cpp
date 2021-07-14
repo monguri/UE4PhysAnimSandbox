@@ -527,7 +527,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		else
 		{
 			SolverBody.MassInv = 1.0f / RigidBody.Mass;
-			SolverBody.InertiaInv *= (SolverBody.Orientation * RigidBody.Inertia).InverseFast();
+			SolverBody.InertiaInv = (SolverBody.Orientation * RigidBody.Inertia).InverseFast();
 		}
 	}
 
