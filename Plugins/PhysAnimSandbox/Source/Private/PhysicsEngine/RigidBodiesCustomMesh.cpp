@@ -165,11 +165,7 @@ void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
 	{
 		// DeltaSecondsの値の変動に関わらず、シミュレーションに使うサブステップタイムは固定とする
 		float SubStepDeltaSeconds = 1.0f / FrameRate;
-
-		for (int32 i = 0; i < NumIterations; ++i)
-		{
-			Simulate(SubStepDeltaSeconds);
-		}
+		Simulate(SubStepDeltaSeconds);
 	}
 
 	ApplyRigidBodiesToMeshDrawing();
