@@ -633,7 +633,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
-					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
 				}
 
 				float MaxFriction = ContactPair.Friction * FMath::Abs(Contact.Constraints[0].AccumImpulse);
@@ -657,7 +657,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
-					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
 				}
 
 				// Tangent2
@@ -675,7 +675,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
-					SolverBodyB.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
 				}
 			}
 		}
