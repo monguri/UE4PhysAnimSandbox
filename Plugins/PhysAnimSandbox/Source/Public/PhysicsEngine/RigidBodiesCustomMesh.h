@@ -120,7 +120,7 @@ private:
 	{
 		FVector ContactPointA; // 剛体Aのローカル座標での剛体A側のコンタクトポイント
 		FVector ContactPointB; // 剛体Bのローカル座標での剛体B側のコンタクトポイント
-		FVector Normal; // ワールド座標。Aを反発させる方向にとる。
+		FVector Normal = FVector::ZeroVector; // ワールド座標。Aを反発させる方向にとる。
 		float PenetrationDepth; // 貫通深度。貫通している場合は負。
 		FConstraint Constraints[3];
 
