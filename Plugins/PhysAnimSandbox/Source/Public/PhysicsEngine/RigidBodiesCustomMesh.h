@@ -103,11 +103,11 @@ private:
 
 	struct FConstraint
 	{
-		FVector Axis; // 拘束軸
-		float JacobianDiagInv; // 拘束式の分母
-		float RHS; // 初期拘束インパルス
-		float LowerLimit; // 拘束インパルスの下限
-		float UpperLimit; // 拘束インパルスの上限
+		FVector Axis = FVector::ZeroVector; // 拘束軸
+		float JacobianDiagInv = 0.0f; // 拘束式の分母
+		float RHS = 0.0f; // 初期拘束インパルス
+		float LowerLimit = 0.0f; // 拘束インパルスの下限
+		float UpperLimit = 0.0f; // 拘束インパルスの上限
 		float AccumImpulse = 0.0f; // 蓄積された拘束インパルス
 
 		void Reset()
@@ -118,10 +118,10 @@ private:
 
 	struct FContact
 	{
-		FVector ContactPointA; // 剛体Aのローカル座標での剛体A側のコンタクトポイント
-		FVector ContactPointB; // 剛体Bのローカル座標での剛体B側のコンタクトポイント
+		FVector ContactPointA = FVector::ZeroVector; // 剛体Aのローカル座標での剛体A側のコンタクトポイント
+		FVector ContactPointB = FVector::ZeroVector; // 剛体Bのローカル座標での剛体B側のコンタクトポイント
 		FVector Normal = FVector::ZeroVector; // ワールド座標。Aを反発させる方向にとる。
-		float PenetrationDepth; // 貫通深度。貫通している場合は負。
+		float PenetrationDepth = 0.0f; // 貫通深度。貫通している場合は負。
 		FConstraint Constraints[3];
 
 		void Reset()
