@@ -659,7 +659,31 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		}
 	}
 
-	// TDOO:ウォームスタートの実装は後回しにする
+#if 0
+	// ウォームスタート
+	for (FContactPair& ContactPair : ContactPairs)
+	{
+		FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
+		FSolverBody& SolverBodyB = SolverBodies[ContactPair.RigidBodyB_Idx];
+
+		for (int32 i = 0; i < ContactPair.NumContact; ++i)
+		{
+			FContact& Contact = ContactPair.Contacts[i];
+
+			const FVector& RotatedPointA = SolverBodyA.Orientation * Contact.ContactPointA;
+			const FVector& RotatedPointB = SolverBodyB.Orientation * Contact.ContactPointB;
+
+			for (const FConstraint& Constraint : Contact.Constraints)
+			{
+				float DeltaImpulse = Constraint.AccumImpulse;
+				SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
+				SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
+				SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+				SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+			}
+		}
+	}
+#endif
 
 	// コンストレイントの反復演算
 	for (int32 Itr = 0; Itr < NumIterations; Itr++)
