@@ -456,6 +456,7 @@ namespace
 		OutPenetrationDepth = DistanceMin;
 		OutContactPointA = ClosestPointA - Separation;
 		OutContactPointB = ALocalToBLocal.TransformPosition(ClosestPointB);
+		UE_LOG(LogTemp, Log, TEXT("SAType=%d"), (uint8)SAType);
 		return true;
 	}
 };
@@ -699,6 +700,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 
 				const FVector& RotatedPointA = SolverBodyA.Orientation * Contact.ContactPointA;
 				const FVector& RotatedPointB = SolverBodyB.Orientation * Contact.ContactPointB;
+				UE_LOG(LogTemp, Log, TEXT("RotatedPointB i=%d, (%f, %f, %f)"), i, RotatedPointB.X, RotatedPointB.Y, RotatedPointB.Z);
 
 				// Normal
 				{
@@ -706,6 +708,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					float DeltaImpulse = Constraint.RHS;
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					UE_LOG(LogTemp, Log, TEXT("Normal DeltaVelocityB i=%d, (%f, %f, %f)"), i, DeltaVelocityB.X, DeltaVelocityB.Y, DeltaVelocityB.Z);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
 					UE_LOG(LogTemp, Log, TEXT("Normal i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
@@ -716,7 +719,9 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					UE_LOG(LogTemp, Log, TEXT("Normal SolverBodyB.DeltaLinearVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaLinearVelocity.X, SolverBodyB.DeltaLinearVelocity.Y, SolverBodyB.DeltaLinearVelocity.Z);
 					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					UE_LOG(LogTemp, Log, TEXT("Normal SolverBodyB.DeltaAngularVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaAngularVelocity.X, SolverBodyB.DeltaAngularVelocity.Y, SolverBodyB.DeltaAngularVelocity.Z);
 				}
 
 				float MaxFriction = ContactPair.Friction * FMath::Abs(Contact.Constraints[0].AccumImpulse);
@@ -731,6 +736,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					float DeltaImpulse = Constraint.RHS;
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					UE_LOG(LogTemp, Log, TEXT("Tangent1 DeltaVelocityB i=%d, (%f, %f, %f)"), i, DeltaVelocityB.X, DeltaVelocityB.Y, DeltaVelocityB.Z);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
 					UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
@@ -741,7 +747,9 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					UE_LOG(LogTemp, Log, TEXT("Tangent1 SolverBodyB.DeltaLinearVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaLinearVelocity.X, SolverBodyB.DeltaLinearVelocity.Y, SolverBodyB.DeltaLinearVelocity.Z);
 					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					UE_LOG(LogTemp, Log, TEXT("Tangent1 SolverBodyB.DeltaAngularVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaAngularVelocity.X, SolverBodyB.DeltaAngularVelocity.Y, SolverBodyB.DeltaAngularVelocity.Z);
 				}
 
 				// Tangent2
@@ -750,6 +758,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					float DeltaImpulse = Constraint.RHS;
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
+					UE_LOG(LogTemp, Log, TEXT("Tangent2 DeltaVelocityB i=%d, (%f, %f, %f)"), i, DeltaVelocityB.X, DeltaVelocityB.Y, DeltaVelocityB.Z);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
 					UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
@@ -760,7 +769,9 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
 					SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(RotatedPointA ^ Constraint.Axis));
 					SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+					UE_LOG(LogTemp, Log, TEXT("Tangent2 SolverBodyB.DeltaLinearVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaLinearVelocity.X, SolverBodyB.DeltaLinearVelocity.Y, SolverBodyB.DeltaLinearVelocity.Z);
 					SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(RotatedPointB ^ Constraint.Axis));
+					UE_LOG(LogTemp, Log, TEXT("Tangent2 SolverBodyB.DeltaAngularVelocity i=%d, (%f, %f, %f)"), i, SolverBodyB.DeltaAngularVelocity.X, SolverBodyB.DeltaAngularVelocity.Y, SolverBodyB.DeltaAngularVelocity.Z);
 				}
 			}
 		}
@@ -778,6 +789,8 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		RigidBodies[i].LinearVelocity += SolverBodies[i].DeltaLinearVelocity;
 		RigidBodies[i].AngularVelocity += SolverBodies[i].DeltaAngularVelocity;
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("=======================================================")); // â¸çs
 }
 
 void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
