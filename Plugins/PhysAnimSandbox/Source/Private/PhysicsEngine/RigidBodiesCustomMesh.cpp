@@ -497,11 +497,11 @@ namespace
 {
 	FMatrix CrossMatrix(const FVector& V)
 	{
-		// FMatrix.M[][]はM[Row][Column]だが、コンストラクタでは各ベクトルが同じRowに入る
+		// FMatrix.M[][]はM[Column][Row]だが、コンストラクタでは各ベクトルが同じColumnに入る
 		FMatrix Ret(
-			FVector(0.0f, -V.Z, V.Y),
-			FVector(V.Z, 0.0f, -V.X),
-			FVector(-V.Y, V.X, 0.0f),
+			FVector(0.0f, V.Z, -V.Y),
+			FVector(-V.Z, 0.0f, V.X),
+			FVector(V.Y, -V.X, 0.0f),
 			FVector(0.0f, 0.0f, 0.0f)
 		);
 		return Ret;
@@ -571,23 +571,23 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			const FVector& RotatedPointA = SolverBodyA.Orientation * Contact.ContactPointA;
 			const FVector& RotatedPointB = SolverBodyB.Orientation * Contact.ContactPointB;
 			
-			//// ログを出すのをコンタクトがあるときに限定したいのでここに入れている
-			//if (i == 0)
-			//{
-			//	UE_LOG(LogTemp, Log, TEXT("RigidBodyB.LinearVelocity=(%f, %f, %f)"), RigidBodyB.LinearVelocity.X, RigidBodyB.LinearVelocity.Y, RigidBodyB.LinearVelocity.Z);
-			//	UE_LOG(LogTemp, Log, TEXT("RigidBodyB.AngularVelocity=(%f, %f, %f)"), RigidBodyB.AngularVelocity.X, RigidBodyB.AngularVelocity.Y, RigidBodyB.AngularVelocity.Z);
-			//}
+			// ログを出すのをコンタクトがあるときに限定したいのでここに入れている
+			if (i == 0)
+			{
+				UE_LOG(LogTemp, Log, TEXT("RigidBodyB.LinearVelocity=(%f, %f, %f)"), RigidBodyB.LinearVelocity.X, RigidBodyB.LinearVelocity.Y, RigidBodyB.LinearVelocity.Z);
+				UE_LOG(LogTemp, Log, TEXT("RigidBodyB.AngularVelocity=(%f, %f, %f)"), RigidBodyB.AngularVelocity.X, RigidBodyB.AngularVelocity.Y, RigidBodyB.AngularVelocity.Z);
+			}
 
-			//UE_LOG(LogTemp, Log, TEXT("i=%d, ContactPointB=(%f, %f, %f)"), i, Contact.ContactPointB.X, Contact.ContactPointB.Y, Contact.ContactPointB.Z);
-			//UE_LOG(LogTemp, Log, TEXT("i=%d, PenetrationDepth=%f"), i, Contact.PenetrationDepth);
+			UE_LOG(LogTemp, Log, TEXT("i=%d, ContactPointB=(%f, %f, %f)"), i, Contact.ContactPointB.X, Contact.ContactPointB.Y, Contact.ContactPointB.Z);
+			UE_LOG(LogTemp, Log, TEXT("i=%d, PenetrationDepth=%f"), i, Contact.PenetrationDepth);
 
 			// FMatrixにはoperator+()はあるがoperator-()がない。
 			const FMatrix& K = FMatrix::Identity * (SolverBodyA.MassInv + SolverBodyB.MassInv) + (CrossMatrix(RotatedPointA) * SolverBodyA.InertiaInv * CrossMatrix(RotatedPointA) * -1) + (CrossMatrix(RotatedPointB) * SolverBodyB.InertiaInv * CrossMatrix(RotatedPointB) * -1);
 
 			const FVector& VelocityA = RigidBodyA.LinearVelocity + (RigidBodyA.AngularVelocity ^ RotatedPointA); // TODO:角速度による速度ってrxwじゃなかったっけ？
 			const FVector& VelocityB = RigidBodyB.LinearVelocity + (RigidBodyB.AngularVelocity ^ RotatedPointB);
-			//UE_LOG(LogTemp, Log, TEXT("i=%d, VelocityA=(%f, %f, %f)"), i, VelocityA.X, VelocityA.Y, VelocityA.Z);
-			//UE_LOG(LogTemp, Log, TEXT("i=%d, VelocityB=(%f, %f, %f)"), i, VelocityB.X, VelocityB.Y, VelocityB.Z);
+			UE_LOG(LogTemp, Log, TEXT("i=%d, VelocityA=(%f, %f, %f)"), i, VelocityA.X, VelocityA.Y, VelocityA.Z);
+			UE_LOG(LogTemp, Log, TEXT("i=%d, VelocityB=(%f, %f, %f)"), i, VelocityB.X, VelocityB.Y, VelocityB.Z);
 			const FVector& RelativeVelocity = VelocityA - VelocityB;
 
 			FVector Tangent1, Tangent2;
@@ -599,24 +599,24 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 				// 新規に衝突したときのみ反発力を発生させる
 				ContactRestitution = (RigidBodyA.Restitution + RigidBodyB.Restitution) * 0.5f;
 			}
-			//UE_LOG(LogTemp, Log, TEXT("i=%d, ContactRestitution=%f"), i, ContactRestitution);
+			UE_LOG(LogTemp, Log, TEXT("i=%d, ContactRestitution=%f"), i, ContactRestitution);
 
 			// Normal
 			{
 				const FVector& Axis = Contact.Normal;
-				//UE_LOG(LogTemp, Log, TEXT("Normal Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Normal Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
 				Contact.Constraints[0].Axis = Axis;
 				const FVector& KdotAxis = K.TransformVector(Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Normal KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Normal KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
 				Contact.Constraints[0].JacobianDiagInv = 1.0f / (KdotAxis | Axis);
 				//Contact.Constraints[0].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Normal i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[0].JacobianDiagInv);
+				UE_LOG(LogTemp, Log, TEXT("Normal i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[0].JacobianDiagInv);
 				Contact.Constraints[0].RHS = -(1.0f + ContactRestitution) * (RelativeVelocity | Axis); // velocity error
-				//UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
 				Contact.Constraints[0].RHS -= (ContactBias * FMath::Min(0.0f, Contact.PenetrationDepth + ContactSlop)) / DeltaSeconds; // position error
-				//UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
 				Contact.Constraints[0].RHS *= Contact.Constraints[0].JacobianDiagInv;
-				//UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Normal i=%d, RHS=%f"), i, Contact.Constraints[0].RHS);
 				Contact.Constraints[0].LowerLimit = 0.0f;
 				Contact.Constraints[0].UpperLimit = FLT_MAX;
 			}
@@ -624,17 +624,17 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			// Tangent1
 			{
 				const FVector& Axis = Tangent1;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent1 Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Tangent1 Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
 				Contact.Constraints[1].Axis = Axis;
 				const FVector& KdotAxis = K.TransformVector(Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Tangent1 KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Tangent1 KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
 				Contact.Constraints[1].JacobianDiagInv = 1.0f / (KdotAxis | Axis);
 				//Contact.Constraints[1].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[1].JacobianDiagInv);
+				UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[1].JacobianDiagInv);
 				Contact.Constraints[1].RHS = -RelativeVelocity | Axis;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, RHS=%f"), i, Contact.Constraints[1].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, RHS=%f"), i, Contact.Constraints[1].RHS);
 				Contact.Constraints[1].RHS *= Contact.Constraints[1].JacobianDiagInv;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, RHS=%f"), i, Contact.Constraints[1].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, RHS=%f"), i, Contact.Constraints[1].RHS);
 				Contact.Constraints[1].LowerLimit = 0.0f;
 				Contact.Constraints[1].UpperLimit = 0.0f;
 			}
@@ -642,17 +642,17 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			// Tangent2
 			{
 				const FVector& Axis = Tangent2;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent2 Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Tangent2 Axis i=%d, (%f, %f, %f)"), i, Axis.X, Axis.Y, Axis.Z);
 				Contact.Constraints[2].Axis = Axis;
 				const FVector& KdotAxis = K.TransformVector(Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Tangent2 KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
+				UE_LOG(LogTemp, Log, TEXT("Tangent2 KdotAxis i=%d, (%f, %f, %f)"), i, KdotAxis.X, KdotAxis.Y, KdotAxis.Z);
 				Contact.Constraints[2].JacobianDiagInv = 1.0f / (KdotAxis | Axis);
 				//Contact.Constraints[2].JacobianDiagInv = 1.0f / (FVector(K.TransformVector(Axis)) | Axis);
-				//UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[2].JacobianDiagInv);
+				UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, JacobianDiagInv=%f"), i, Contact.Constraints[2].JacobianDiagInv);
 				Contact.Constraints[2].RHS = -RelativeVelocity | Axis;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, RHS=%f"), i, Contact.Constraints[2].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, RHS=%f"), i, Contact.Constraints[2].RHS);
 				Contact.Constraints[2].RHS *= Contact.Constraints[2].JacobianDiagInv;
-				//UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, RHS=%f"), i, Contact.Constraints[2].RHS);
+				UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, RHS=%f"), i, Contact.Constraints[2].RHS);
 				Contact.Constraints[2].LowerLimit = 0.0f;
 				Contact.Constraints[2].UpperLimit = 0.0f;
 			}
@@ -683,7 +683,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
-					//UE_LOG(LogTemp, Log, TEXT("Normal i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
+					UE_LOG(LogTemp, Log, TEXT("Normal i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
 					float OldImpulse = Constraint.AccumImpulse;
 					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
@@ -708,7 +708,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
-					//UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
+					UE_LOG(LogTemp, Log, TEXT("Tangent1 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
 					float OldImpulse = Constraint.AccumImpulse;
 					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
@@ -727,7 +727,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 					const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + (SolverBodyA.DeltaAngularVelocity ^ RotatedPointA);
 					const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + (SolverBodyB.DeltaAngularVelocity ^ RotatedPointB);
 					DeltaImpulse -= Constraint.JacobianDiagInv * (Constraint.Axis | (DeltaVelocityA - DeltaVelocityB));
-					//UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
+					UE_LOG(LogTemp, Log, TEXT("Tangent2 i=%d, DeltaImpuse=%f"), i, DeltaImpulse);
 
 					float OldImpulse = Constraint.AccumImpulse;
 					Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
@@ -765,12 +765,7 @@ void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 	}
 
 	RigidBodies[RBIdx].LinearVelocity += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
-	//// TODO:仮。発散しないように
-	//RigidBodies[RBIdx].LinearVelocity.Z = FMath::Max(RigidBodies[RBIdx].LinearVelocity.Z, -1000.0f);
-
 	RigidBodies[RBIdx].Position += RigidBodies[RBIdx].LinearVelocity * DeltaSeconds;
-	//// TODO:仮。発散しないように
-	//RigidBodies[RBIdx].Position.Z = FMath::Max(RigidBodies[RBIdx].Position.Z, -100.0f);
 
 	const FQuat& OrientationDifferential = FQuat(RigidBodies[RBIdx].AngularVelocity.X, RigidBodies[RBIdx].AngularVelocity.Y, RigidBodies[RBIdx].AngularVelocity.Z, 0.0f) * RigidBodies[RBIdx].Orientation * 0.5f;
 	RigidBodies[RBIdx].Orientation = (RigidBodies[RBIdx].Orientation + OrientationDifferential * DeltaSeconds).GetNormalized();
