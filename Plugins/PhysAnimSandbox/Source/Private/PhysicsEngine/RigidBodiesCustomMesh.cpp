@@ -660,7 +660,6 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		}
 	}
 
-#if 0
 	// ウォームスタート
 	for (FContactPair& ContactPair : ContactPairs)
 	{
@@ -684,7 +683,6 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			}
 		}
 	}
-#endif
 
 	// コンストレイントの反復演算
 	for (int32 Itr = 0; Itr < NumIterations; Itr++)
