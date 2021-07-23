@@ -60,6 +60,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		FVector(+0.5, +0.5, +0.5),
 	};
 
+#if 0
 	static TArray<FEdge> BoxEdges = 
 	{
 		{{2, 3}, {4, 1}},
@@ -81,7 +82,12 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{2, 4}, {8, 9}},
 		{{7, 1}, {10, 11}},
 	};
+#else
+	TArray<FEdge> BoxEdges;
+	BoxEdges.SetNum(18); 
+#endif
 
+#if 0
 	static TArray<FFacet> BoxFacets = 
 	{
 		{{0, 1, 2}, {1, 3, 4}, FVector(0, 0, -1)},
@@ -97,6 +103,63 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{3, 1, 7}, {2, 12, 17}, FVector(+1, 0, 0)},
 		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
 	};
+#else
+	// EdgeId[3]とNormalは計算で代入するので0を入れておく
+	TArray<FFacet> BoxFacets = 
+	{
+		{{0, 1, 2}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{1, 3, 2}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{4, 7, 5}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{4, 6, 7}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{2, 3, 6}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{3, 7, 6}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{1, 0, 5}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{0, 4, 5}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{0, 2, 4}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{2, 6, 4}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{3, 1, 7}, {0, 0, 0}, FVector(0, 0, 0)},
+		{{1, 5, 7}, {0, 0, 0}, FVector(0, 0, 0)},
+	};
+
+	// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
+	uint8 EdgeIdTable[28]; // n(n-1)/2 n = 8 とりあえずuint8なので255エッジまで
+	memset(EdgeIdTable, 0xff, sizeof(EdgeIdTable));
+
+	// NormalとEdgeId[3]の計算。BoxEdgesの作成。
+	int32 EdgeIdx = 0;
+	for (int32 FacetId = 0; FacetId < BoxFacets.Num(); FacetId++)
+	{
+		FFacet& Facet = BoxFacets[FacetId];
+
+		const FVector& P0 = BoxVertices[Facet.VertId[0]];
+		const FVector& P1 = BoxVertices[Facet.VertId[1]];
+		const FVector& P2 = BoxVertices[Facet.VertId[2]];
+		Facet.Normal = -FVector::CrossProduct(P1 - P0, P2 - P0); // 左手系
+
+		for (int32 TriVert = 0; TriVert < 3; TriVert++)
+		{
+			int32 VertId0 = FMath::Min(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
+			int32 VertId1 = FMath::Max(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
+			int32 TableId = VertId1 * (VertId1 - 1) / 2 + VertId0;
+			if (EdgeIdTable[TableId] == 0xff)
+			{
+				// 初回登録
+				BoxEdges[EdgeIdx].VertId[0] = VertId0;
+				BoxEdges[EdgeIdx].VertId[1] = VertId1;
+				BoxEdges[EdgeIdx].FacetId[0] = FacetId;
+				BoxEdges[EdgeIdx].FacetId[1] = FacetId; // 初回登録時は両方同じFacetIdに。別のfacetで同じエッジに出会ったときに更新する
+				Facet.EdgeId[TriVert] = EdgeIdx;
+
+				EdgeIdTable[TableId] = EdgeIdx;
+				EdgeIdx++;
+			}
+			else
+			{
+				BoxEdges[EdgeIdTable[TableId]].FacetId[1] = FacetId;
+			}
+		}
+	}
+#endif
 
 	TArray<FVector> BoxVerticesFloor;
 	for (const FVector& Vertex : BoxVertices)
