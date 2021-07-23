@@ -54,6 +54,9 @@ private:
 	FVector InitPosCenter = FVector(0.0f, 0.0f, 300.0f);
 
 	UPROPERTY(EditAnywhere)
+	FQuat CubeRot = FQuat::Identity;
+
+	UPROPERTY(EditAnywhere)
 	FVector CubeScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm cube.
 
 	UPROPERTY(EditAnywhere)
