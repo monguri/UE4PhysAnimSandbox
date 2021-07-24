@@ -617,9 +617,9 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		else
 		{
 			SolverBody.MassInv = 1.0f / RigidBody.Mass;
-			//SolverBody.InertiaInv = (SolverBody.Orientation * RigidBody.Inertia).InverseFast();
-			const FMatrix& OrientationMat = SolverBody.Orientation * FMatrix::Identity; // FQuatをFMatrixに変換する方法がないのでしょうがなく
-			SolverBody.InertiaInv = (OrientationMat * RigidBody.Inertia.Inverse() * OrientationMat.GetTransposed());
+			//SolverBody.InertiaInv = (SolverBody.Orientation.Inverse() * RigidBody.Inertia).InverseFast(); // TODO:これは間違い。原因を調べよう。乗算が逆扱いになる？
+			const FMatrix& OrientationMat = FTransform(SolverBody.Orientation).ToMatrixNoScale();
+			SolverBody.InertiaInv = OrientationMat * RigidBody.Inertia.Inverse() * OrientationMat.GetTransposed();
 		}
 	}
 
