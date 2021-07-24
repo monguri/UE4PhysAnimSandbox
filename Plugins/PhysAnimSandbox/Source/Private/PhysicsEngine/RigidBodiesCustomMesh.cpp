@@ -29,10 +29,8 @@ namespace
 		return Point;
 	}
 
-	FMatrix CalculateInertiaBox(float Density, FVector Extent)
+	FMatrix CalculateInertiaBox(float Mass, FVector Extent)
 	{
-		float Mass = Extent.X * Extent.Y * Extent.Z * Density;
-
 		FMatrix Ret = FMatrix::Identity;
 		Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
 		Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
@@ -176,7 +174,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.CollisionShape.Edges = BoxEdges;
 	FloorRigidBody.CollisionShape.Facets = BoxFacets;
 	FloorRigidBody.Mass = FloorScale.X * FloorScale.Y * FloorScale.Z * Density; // フロアはStaticなので無限質量扱いにしてるので使っていない
-	FloorRigidBody.Inertia = CalculateInertiaBox(Density, FloorScale); // フロアはStaticなので無限質量扱いにしてるので使っていない
+	FloorRigidBody.Inertia = CalculateInertiaBox(FloorRigidBody.Mass, FloorScale); // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = Friction;
 	FloorRigidBody.Restitution = Restitution;
 	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
@@ -198,7 +196,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.CollisionShape.Edges = BoxEdges;
 		CubeRigidBody.CollisionShape.Facets = BoxFacets;
 		CubeRigidBody.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
-		CubeRigidBody.Inertia = CalculateInertiaBox(Density, CubeScale);
+		CubeRigidBody.Inertia = CalculateInertiaBox(CubeRigidBody.Mass, CubeScale);
 		CubeRigidBody.Friction = Friction;
 		CubeRigidBody.Restitution = Restitution;
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
