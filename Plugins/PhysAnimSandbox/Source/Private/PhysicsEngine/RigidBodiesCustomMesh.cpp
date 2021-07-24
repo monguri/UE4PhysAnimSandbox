@@ -202,7 +202,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CubeRigidBody.Friction = Friction;
 		CubeRigidBody.Restitution = Restitution;
 		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
-		CubeRigidBody.Orientation = CubeRot;
+		CubeRigidBody.Orientation = CubeRot.Quaternion();
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
