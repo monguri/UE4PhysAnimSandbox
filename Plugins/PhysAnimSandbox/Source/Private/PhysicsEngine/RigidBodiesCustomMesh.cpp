@@ -72,14 +72,14 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		{{4, 7}, {2, 3}},
 		{{5, 7}, {2, 11}},
 		{{4, 6}, {3, 9}},
+		{{6, 7}, {3, 5}},
 		{{4, 0}, {7, 8}},
 		{{6, 2}, {9, 4}},
-		{{6, 3}, {4, 5}},
 		{{7, 3}, {5, 10}},
 		{{1, 5}, {11, 6}},
-		{{1, 4}, {7, 6}},
-		{{0, 4}, {7, 8}},
+		{{0, 5}, {7, 6}},
 		{{2, 4}, {8, 9}},
+		{{6, 3}, {4, 5}},
 		{{7, 1}, {10, 11}},
 	};
 #else
@@ -156,6 +156,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			else
 			{
 				BoxEdges[EdgeIdTable[TableId]].FacetId[1] = FacetId;
+				Facet.EdgeId[TriVert] = EdgeIdTable[TableId];
 			}
 		}
 	}
