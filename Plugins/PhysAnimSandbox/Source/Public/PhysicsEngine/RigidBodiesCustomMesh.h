@@ -5,6 +5,25 @@
 #include "GameFramework/Actor.h"
 #include "RigidBodiesCustomMesh.generated.h"
 
+
+USTRUCT()
+struct FRigidBodySetting
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	float Friction = 0.2f;
+
+	UPROPERTY(EditAnywhere)
+	float Restitution = 0.6f;
+
+	UPROPERTY(EditAnywhere)
+	float Mass = 1.0f;
+
+	UPROPERTY(EditAnywhere)
+	FTransform Trasnform = FTransform::Identity;
+};
+
 UCLASS()
 class ARigidBodiesCustomMesh : public AActor
 {
@@ -28,19 +47,6 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float Gravity = -981.0f;
-
-	UPROPERTY(EditAnywhere)
-	int32 NumRigidBodies = 1;
-
-	UPROPERTY(EditAnywhere)
-	float Density = 0.1f;
-
-	UPROPERTY(EditAnywhere)
-	float Friction = 1.0f;
-
-	UPROPERTY(EditAnywhere)
-	float Restitution = 1.0f;
-
 	UPROPERTY(EditAnywhere)
 	float ContactBias = 0.1f;
 
@@ -48,22 +54,40 @@ private:
 	float ContactSlop = 0.1f;
 
 	UPROPERTY(EditAnywhere)
-	float InitPosRadius = 50.0f;
-
-	UPROPERTY(EditAnywhere)
-	FVector InitPosCenter = FVector(0.0f, 0.0f, 300.0f);
-
-	UPROPERTY(EditAnywhere)
-	FRotator CubeRot = FRotator::ZeroRotator;
-
-	UPROPERTY(EditAnywhere)
-	FVector CubeScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm cube.
-
-	UPROPERTY(EditAnywhere)
 	FVector FloorScale = FVector(1000.0f, 1000.0f, 50.0f); // for 1cm x 1cm x 1cm cube.
 
 	UPROPERTY(EditAnywhere)
 	FVector FloorPosition = FVector(0.0f, 0.0f, -25.0f);
+
+	UPROPERTY(EditAnywhere)
+	bool bDirectSet = false;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	float InitPosRadius = 50.0f;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	FVector InitPosCenter = FVector(0.0f, 0.0f, 300.0f);
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	int32 NumRigidBodies = 1;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	float Friction = 0.2f;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	float Restitution = 0.6f;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	float Density = 0.1f;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	FRotator CubeRot = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	FVector CubeScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm cube.
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bDirectSet"))
+	TArray<FRigidBodySetting> RigidBodySettings;
 
 public:
 	struct FEdge
