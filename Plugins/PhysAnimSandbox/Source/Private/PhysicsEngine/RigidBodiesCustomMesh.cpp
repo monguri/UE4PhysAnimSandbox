@@ -39,6 +39,71 @@ namespace
 
 		return Ret;
 	}
+
+	 void CreateConvexCollisionShape(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	{
+		CollisionShape.Vertices = Vertices;
+		CollisionShape.Edges.SetNum(Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Facets.SetNum(Indices.Num());
+
+		for (FVector& Vertex : CollisionShape.Vertices)
+		{
+			Vertex *= Scale;
+		}
+
+		for (int32 i = 0; i < CollisionShape.Facets.Num(); i++)
+		{
+			ARigidBodiesCustomMesh::FFacet& Facet = CollisionShape.Facets[i];
+			Facet.VertId[0] = Indices[i].X;
+			Facet.VertId[1] = Indices[i].Y;
+			Facet.VertId[2] = Indices[i].Z;
+		}
+
+		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
+		check(Vertices.Num() < 255);
+		TArray<uint8> EdgeIdTable; // とりあえずuint8なので255エッジまで。FFは識別値に使う
+		EdgeIdTable.SetNum(Vertices.Num() * (Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
+		for (uint8& EdgeId : EdgeIdTable)
+		{
+			EdgeId = 0xff;
+		}
+
+		// NormalとEdgeId[3]の計算。EdgesとFacetsの作成。
+		int32 EdgeIdx = 0;
+		for (int32 FacetId = 0; FacetId < CollisionShape.Facets.Num(); FacetId++)
+		{
+			ARigidBodiesCustomMesh::FFacet& Facet = CollisionShape.Facets[FacetId];
+
+			const FVector& P0 = Vertices[Facet.VertId[0]];
+			const FVector& P1 = Vertices[Facet.VertId[1]];
+			const FVector& P2 = Vertices[Facet.VertId[2]];
+			Facet.Normal = -FVector::CrossProduct(P1 - P0, P2 - P0); // 左手系
+
+			for (int32 TriVert = 0; TriVert < 3; TriVert++)
+			{
+				int32 VertId0 = FMath::Min(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
+				int32 VertId1 = FMath::Max(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
+				int32 TableId = VertId1 * (VertId1 - 1) / 2 + VertId0;
+				if (EdgeIdTable[TableId] == 0xff)
+				{
+					// 初回登録
+					CollisionShape.Edges[EdgeIdx].VertId[0] = VertId0;
+					CollisionShape.Edges[EdgeIdx].VertId[1] = VertId1;
+					CollisionShape.Edges[EdgeIdx].FacetId[0] = FacetId;
+					CollisionShape.Edges[EdgeIdx].FacetId[1] = FacetId; // 初回登録時は両方同じFacetIdに。別のfacetで同じエッジに出会ったときに更新する
+					Facet.EdgeId[TriVert] = EdgeIdx;
+
+					EdgeIdTable[TableId] = EdgeIdx;
+					EdgeIdx++;
+				}
+				else
+				{
+					CollisionShape.Edges[EdgeIdTable[TableId]].FacetId[1] = FacetId;
+					Facet.EdgeId[TriVert] = EdgeIdTable[TableId];
+				}
+			}
+		}
+	}
 }
 
 void ARigidBodiesCustomMesh::BeginPlay()
@@ -78,121 +143,27 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		FVector(+0.5, +0.5, +0.5),
 	};
 
-#if 0
-	static TArray<FEdge> BoxEdges = 
+	static TArray<FIntVector> BoxIndices = 
 	{
-		{{2, 3}, {4, 1}},
-		{{2, 1}, {0, 1}},
-		{{3, 1}, {10, 1}},
-		{{0, 2}, {0, 8}},
-		{{0, 1}, {0, 6}},
-		{{4, 5}, {2, 7}},
-		{{4, 7}, {2, 3}},
-		{{5, 7}, {2, 11}},
-		{{4, 6}, {3, 9}},
-		{{6, 7}, {3, 5}},
-		{{4, 0}, {7, 8}},
-		{{6, 2}, {9, 4}},
-		{{7, 3}, {5, 10}},
-		{{1, 5}, {11, 6}},
-		{{0, 5}, {7, 6}},
-		{{2, 4}, {8, 9}},
-		{{6, 3}, {4, 5}},
-		{{7, 1}, {10, 11}},
+		FIntVector(0, 1, 2),
+		FIntVector(1, 3, 2),
+		FIntVector(4, 7, 5),
+		FIntVector(4, 6, 7),
+		FIntVector(2, 3, 6),
+		FIntVector(3, 7, 6),
+		FIntVector(1, 0, 5),
+		FIntVector(0, 4, 5),
+		FIntVector(0, 2, 4),
+		FIntVector(2, 6, 4),
+		FIntVector(3, 1, 7),
+		FIntVector(1, 5, 7)
 	};
-#else
-	TArray<FEdge> BoxEdges;
-	BoxEdges.SetNum(18); 
-#endif
-
-#if 0
-	static TArray<FFacet> BoxFacets = 
-	{
-		{{0, 1, 2}, {1, 3, 4}, FVector(0, 0, -1)},
-		{{1, 3, 2}, {0, 1, 2}, FVector(0, 0, -1)},
-		{{4, 7, 5}, {5, 6, 7}, FVector(0, 0, +1)},
-		{{4, 6, 7}, {6, 8, 9}, FVector(0, 0, +1)},
-		{{2, 3, 6}, {0, 10, 11}, FVector(0, +1, 0)},
-		{{3, 7, 6}, {9, 11, 12}, FVector(0, +1, 0)},
-		{{1, 0, 5}, {4, 13, 14}, FVector(0, -1, 0)},
-		{{0, 4, 5}, {5, 14, 15}, FVector(0, -1, 0)},
-		{{0, 2, 4}, {3, 15, 16}, FVector(-1, 0, 0)},
-		{{2, 6, 4}, {8, 10, 16}, FVector(-1, 0, 0)},
-		{{3, 1, 7}, {2, 12, 17}, FVector(+1, 0, 0)},
-		{{1, 5, 7}, {7, 13, 17}, FVector(+1, 0, 0)},
-	};
-#else
-	// EdgeId[3]とNormalは計算で代入するので0を入れておく
-	TArray<FFacet> BoxFacets = 
-	{
-		{{0, 1, 2}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{1, 3, 2}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{4, 7, 5}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{4, 6, 7}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{2, 3, 6}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{3, 7, 6}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{1, 0, 5}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{0, 4, 5}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{0, 2, 4}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{2, 6, 4}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{3, 1, 7}, {0, 0, 0}, FVector(0, 0, 0)},
-		{{1, 5, 7}, {0, 0, 0}, FVector(0, 0, 0)},
-	};
-
-	// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
-	uint8 EdgeIdTable[28]; // n(n-1)/2 n = 8 とりあえずuint8なので255エッジまで
-	memset(EdgeIdTable, 0xff, sizeof(EdgeIdTable));
-
-	// NormalとEdgeId[3]の計算。BoxEdgesの作成。
-	int32 EdgeIdx = 0;
-	for (int32 FacetId = 0; FacetId < BoxFacets.Num(); FacetId++)
-	{
-		FFacet& Facet = BoxFacets[FacetId];
-
-		const FVector& P0 = BoxVertices[Facet.VertId[0]];
-		const FVector& P1 = BoxVertices[Facet.VertId[1]];
-		const FVector& P2 = BoxVertices[Facet.VertId[2]];
-		Facet.Normal = -FVector::CrossProduct(P1 - P0, P2 - P0); // 左手系
-
-		for (int32 TriVert = 0; TriVert < 3; TriVert++)
-		{
-			int32 VertId0 = FMath::Min(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
-			int32 VertId1 = FMath::Max(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
-			int32 TableId = VertId1 * (VertId1 - 1) / 2 + VertId0;
-			if (EdgeIdTable[TableId] == 0xff)
-			{
-				// 初回登録
-				BoxEdges[EdgeIdx].VertId[0] = VertId0;
-				BoxEdges[EdgeIdx].VertId[1] = VertId1;
-				BoxEdges[EdgeIdx].FacetId[0] = FacetId;
-				BoxEdges[EdgeIdx].FacetId[1] = FacetId; // 初回登録時は両方同じFacetIdに。別のfacetで同じエッジに出会ったときに更新する
-				Facet.EdgeId[TriVert] = EdgeIdx;
-
-				EdgeIdTable[TableId] = EdgeIdx;
-				EdgeIdx++;
-			}
-			else
-			{
-				BoxEdges[EdgeIdTable[TableId]].FacetId[1] = FacetId;
-				Facet.EdgeId[TriVert] = EdgeIdTable[TableId];
-			}
-		}
-	}
-#endif
-
-	TArray<FVector> BoxVerticesFloor;
-	for (const FVector& Vertex : BoxVertices)
-	{
-		BoxVerticesFloor.Add(Vertex * FloorScale);
-	}
 
 	RigidBodies.SetNum(NumRigidBodies + 1); // +1はフロアの分
 
 	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
 	FRigidBody& FloorRigidBody = RigidBodies[0];
-	FloorRigidBody.CollisionShape.Vertices = BoxVerticesFloor;
-	FloorRigidBody.CollisionShape.Edges = BoxEdges;
-	FloorRigidBody.CollisionShape.Facets = BoxFacets;
+	CreateConvexCollisionShape(BoxVertices, BoxIndices, FloorScale, FloorRigidBody.CollisionShape);
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = FloorFriction;
@@ -201,23 +172,12 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.Orientation = FloorRotation.Quaternion();
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
-	TArray<FVector> BoxVerticesScaled;
-	BoxVerticesScaled.SetNum(BoxVertices.Num());
-
 	for (int32 i = 1; i < NumRigidBodies + 1; i++)
 	{
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
-		BoxVerticesScaled.Reset();
-		for (const FVector& Vertex : BoxVertices)
-		{
-			BoxVerticesScaled.Add(Vertex * Setting.Scale);
-		}
-
 		FRigidBody& CubeRigidBody = RigidBodies[i];
-		CubeRigidBody.CollisionShape.Vertices = BoxVerticesScaled;
-		CubeRigidBody.CollisionShape.Edges = BoxEdges;
-		CubeRigidBody.CollisionShape.Facets = BoxFacets;
+		CreateConvexCollisionShape(BoxVertices, BoxIndices, Setting.Scale, CubeRigidBody.CollisionShape);
 
 		CubeRigidBody.Mass = Setting.Mass;
 		CubeRigidBody.Inertia = CalculateInertiaBox(CubeRigidBody.Mass, Setting.Scale);
@@ -618,28 +578,6 @@ namespace
 		);
 		return Ret;
 	}
-
-#if 0 // 結局あやしいと思ったのは勘違いだったようなのでコメントアウト
-	// FMatrix operator*(const FMatrix& M) const;を、FQuat::Inverse()のPLATFORM_ENABLE_VECTORINTRINSICS=1のときの動作があやしいため0のときにした実装に
-	FMatrix MultiplyQuatToMatrix(const FQuat& Q, const FMatrix& M)
-	{
-		FMatrix Result;
-		FQuat VT, VR;
-		FQuat Inv = FQuat(-Q.X, -Q.Y, -Q.Z, Q.W);
-		for (int32 I=0; I<4; ++I)
-		{
-			FQuat VQ(M.M[I][0], M.M[I][1], M.M[I][2], M.M[I][3]);
-			VectorQuaternionMultiply(&VT, &Q, &VQ);
-			VectorQuaternionMultiply(&VR, &VT, &Inv);
-			Result.M[I][0] = VR.X;
-			Result.M[I][1] = VR.Y;
-			Result.M[I][2] = VR.Z;
-			Result.M[I][3] = VR.W;
-		}
-
-		return Result;
-	}
-#endif
 }
 
 void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
