@@ -44,6 +44,25 @@ void ARigidBodiesCustomMesh::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!bDirectSet)
+	{
+		// InitPosRadius半径の球内にランダムに配置
+		FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
+
+		for (int32 i = 0; i < NumRigidBodies; i++)
+		{
+			FRigidBodySetting Setting;
+			Setting.Friction = Friction;
+			Setting.Restitution = Restitution;
+			Setting.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
+			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
+			Setting.Rotation = CubeRot;
+			Setting.Scale = CubeScale;
+			RigidBodySettings.Add(Setting);
+		}
+	}
+
+	NumRigidBodies = RigidBodySettings.Num();
 	NumThreadRBs = (NumRigidBodies + 1 + NumThreads - 1) / NumThreads; // +1はフロアの分
 
 	static TArray<FVector> BoxVertices = 
@@ -173,34 +192,37 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.CollisionShape.Vertices = BoxVerticesFloor;
 	FloorRigidBody.CollisionShape.Edges = BoxEdges;
 	FloorRigidBody.CollisionShape.Facets = BoxFacets;
-	FloorRigidBody.Mass = FloorScale.X * FloorScale.Y * FloorScale.Z * Density; // フロアはStaticなので無限質量扱いにしてるので使っていない
-	FloorRigidBody.Inertia = CalculateInertiaBox(FloorRigidBody.Mass, FloorScale); // フロアはStaticなので無限質量扱いにしてるので使っていない
-	FloorRigidBody.Friction = Friction;
-	FloorRigidBody.Restitution = Restitution;
+	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
+	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
+	FloorRigidBody.Friction = FloorFriction;
+	FloorRigidBody.Restitution = FloorRestitution;
 	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
 	TArray<FVector> BoxVerticesScaled;
-	for (const FVector& Vertex : BoxVertices)
-	{
-		BoxVerticesScaled.Add(Vertex * CubeScale);
-	}
+	BoxVerticesScaled.SetNum(BoxVertices.Num());
 
-	// InitPosRadius半径の球内にランダムに配置
-	FBoxSphereBounds BoxSphere(InitPosCenter, FVector(InitPosRadius), InitPosRadius);
-
-	for (int32 i = 1; i < RigidBodies.Num(); i++)
+	for (int32 i = 1; i < NumRigidBodies + 1; i++)
 	{
+		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
+
+		BoxVerticesScaled.Reset();
+		for (const FVector& Vertex : BoxVertices)
+		{
+			BoxVerticesScaled.Add(Vertex * Setting.Scale);
+		}
+
 		FRigidBody& CubeRigidBody = RigidBodies[i];
 		CubeRigidBody.CollisionShape.Vertices = BoxVerticesScaled;
 		CubeRigidBody.CollisionShape.Edges = BoxEdges;
 		CubeRigidBody.CollisionShape.Facets = BoxFacets;
-		CubeRigidBody.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
-		CubeRigidBody.Inertia = CalculateInertiaBox(CubeRigidBody.Mass, CubeScale);
-		CubeRigidBody.Friction = Friction;
-		CubeRigidBody.Restitution = Restitution;
-		CubeRigidBody.Position = GetActorLocation() + RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
-		CubeRigidBody.Orientation = CubeRot.Quaternion();
+
+		CubeRigidBody.Mass = Setting.Mass;
+		CubeRigidBody.Inertia = CalculateInertiaBox(CubeRigidBody.Mass, Setting.Scale);
+		CubeRigidBody.Friction = Setting.Friction;
+		CubeRigidBody.Restitution = Setting.Restitution;
+		CubeRigidBody.Position = Setting.Location;
+		CubeRigidBody.Orientation = Setting.Rotation.Quaternion();
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 

@@ -21,7 +21,13 @@ struct FRigidBodySetting
 	float Mass = 1.0f;
 
 	UPROPERTY(EditAnywhere)
-	FTransform Trasnform = FTransform::Identity;
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere)
+	FRotator Rotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere)
+	FVector Scale = FVector::ZeroVector;
 };
 
 UCLASS()
@@ -58,6 +64,12 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	FVector FloorPosition = FVector(0.0f, 0.0f, -25.0f);
+
+	UPROPERTY(EditAnywhere)
+	float FloorFriction = 0.2f;
+
+	UPROPERTY(EditAnywhere)
+	float FloorRestitution = 0.6f;
 
 	UPROPERTY(EditAnywhere)
 	bool bDirectSet = false;
@@ -115,8 +127,8 @@ public:
 		FCollisionShape CollisionShape;
 
 		float Mass = 1.0f;
-		float Friction = 1.0f;
-		float Restitution = 1.0f;
+		float Friction = 0.2f;
+		float Restitution = 0.6f;
 		FMatrix Inertia = FMatrix::Identity;
 		FVector Position = FVector::ZeroVector;
 		FQuat Orientation = FQuat::Identity;
