@@ -12,10 +12,10 @@ struct FRigidBodySetting
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	float Friction = 0.2f;
+	float Friction = 0.6f;
 
 	UPROPERTY(EditAnywhere)
-	float Restitution = 0.6f;
+	float Restitution = 0.2f;
 
 	UPROPERTY(EditAnywhere)
 	float Mass = 1.0f;
