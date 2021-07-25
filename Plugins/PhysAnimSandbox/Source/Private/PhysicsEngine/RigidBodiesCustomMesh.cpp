@@ -196,7 +196,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = FloorFriction;
 	FloorRigidBody.Restitution = FloorRestitution;
-	FloorRigidBody.Position = GetActorLocation() + FloorPosition;
+	FloorRigidBody.Position = FloorLocation;
+	FloorRigidBody.Orientation = FloorRotation.Quaternion();
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
 	TArray<FVector> BoxVerticesScaled;

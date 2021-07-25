@@ -60,10 +60,13 @@ private:
 	float ContactSlop = 0.1f;
 
 	UPROPERTY(EditAnywhere)
-	FVector FloorScale = FVector(1000.0f, 1000.0f, 50.0f); // for 1cm x 1cm x 1cm cube.
+	FVector FloorLocation = FVector(0.0f, 0.0f, -25.0f);
 
 	UPROPERTY(EditAnywhere)
-	FVector FloorPosition = FVector(0.0f, 0.0f, -25.0f);
+	FRotator FloorRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere)
+	FVector FloorScale = FVector(1000.0f, 1000.0f, 50.0f); // for 1cm x 1cm x 1cm cube.
 
 	UPROPERTY(EditAnywhere)
 	float FloorFriction = 0.2f;
