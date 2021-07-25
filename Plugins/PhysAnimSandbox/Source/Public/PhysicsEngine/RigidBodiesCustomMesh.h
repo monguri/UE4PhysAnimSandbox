@@ -107,15 +107,15 @@ private:
 public:
 	struct FEdge
 	{
-		int32 VertId[2];
-		int32 FacetId[2];
+		int32 VertId[2] = {-1, -1};
+		int32 FacetId[2] = {-1, -1};
 	};
 
 	struct FFacet
 	{
-		int32 VertId[3];
-		int32 EdgeId[3];
-		FVector Normal;
+		int32 VertId[3] = {-1, -1, -1};
+		int32 EdgeId[3] = {-1, -1, -1};
+		FVector Normal = FVector::ZeroVector;
 	};
 
 	struct FCollisionShape
