@@ -1,6 +1,7 @@
 #include "PhysicsEngine/RigidBodiesCustomMesh.h"
 #include "UObject/ConstructorHelpers.h"
 #include "CustomMeshComponent.h"
+#include "DrawDebugHelpers.h"
 
 ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 {
@@ -578,6 +579,30 @@ void ARigidBodiesCustomMesh::DetectCollision()
 			ContactPairIdx++; 	
 		}
 	}
+
+#if ENABLE_DRAW_DEBUG
+	// コンタクト情報のデバッグ表示
+	for (FContactPair& ContactPair : ContactPairs)
+	{
+		const FRigidBody& RigidBodyA = RigidBodies[ContactPair.RigidBodyA_Idx];
+		const FRigidBody& RigidBodyB = RigidBodies[ContactPair.RigidBodyB_Idx];
+
+		for (int32 i = 0; i < ContactPair.NumContact; ++i)
+		{
+			FContact& Contact = ContactPair.Contacts[i];
+			bool bPersistentLines = false;
+			float LifeTime = -1.0f;
+
+			const FVector& PointA_WS = RigidBodyA.Position + RigidBodyA.Orientation * Contact.ContactPointA;
+			DrawDebugPoint(GetWorld(), PointA_WS, 5.0f, FColor::Red, bPersistentLines, LifeTime, SDPG_Foreground);
+			DrawDebugLine(GetWorld(), PointA_WS, PointA_WS + Contact.Normal * 10.0f, FColor::Cyan, bPersistentLines, LifeTime, SDPG_Foreground);
+
+			const FVector& PointB_WS = RigidBodyB.Position + RigidBodyB.Orientation * Contact.ContactPointB;
+			DrawDebugPoint(GetWorld(), PointB_WS, 5.0f, FColor::Blue, bPersistentLines, LifeTime, SDPG_Foreground);
+			DrawDebugLine(GetWorld(), PointB_WS, PointB_WS - Contact.Normal * 10.0f, FColor::Cyan, bPersistentLines, LifeTime, SDPG_Foreground);
+		}
+	}
+#endif
 }
 
 namespace
