@@ -69,10 +69,10 @@ private:
 	FVector FloorScale = FVector(1000.0f, 1000.0f, 50.0f); // for 1cm x 1cm x 1cm cube.
 
 	UPROPERTY(EditAnywhere)
-	float FloorFriction = 0.2f;
+	float FloorFriction = 0.6f;
 
 	UPROPERTY(EditAnywhere)
-	float FloorRestitution = 0.6f;
+	float FloorRestitution = 0.2f;
 
 	UPROPERTY(EditAnywhere)
 	bool bDirectSet = false;
@@ -87,10 +87,10 @@ private:
 	int32 NumRigidBodies = 1;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	float Friction = 0.2f;
+	float Friction = 0.6f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	float Restitution = 0.6f;
+	float Restitution = 0.2f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	float Density = 0.1f;
