@@ -122,10 +122,10 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			FRigidBodySetting Setting;
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
-			Setting.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * 8.0f * Density; // 8.0はCubeScaleがHalfExtentなので2x2x2から来ている
+			Setting.Mass = BoxScale.X * BoxScale.Y * BoxScale.Z * 8.0f * Density; // 8.0はBoxScaleがHalfExtentなので2x2x2から来ている
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
-			Setting.Rotation = CubeRot;
-			Setting.Scale = CubeScale;
+			Setting.Rotation = BoxRot;
+			Setting.Scale = BoxScale;
 			RigidBodySettings.Add(Setting);
 		}
 	}
@@ -178,15 +178,15 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	{
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
-		FRigidBody& CubeRigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(BoxVertices, BoxIndices, Setting.Scale, CubeRigidBody.CollisionShape);
+		FRigidBody& BoxRigidBody = RigidBodies[i];
+		CreateConvexCollisionShape(BoxVertices, BoxIndices, Setting.Scale, BoxRigidBody.CollisionShape);
 
-		CubeRigidBody.Mass = Setting.Mass;
-		CubeRigidBody.Inertia = CalculateInertiaBox(CubeRigidBody.Mass, Setting.Scale);
-		CubeRigidBody.Friction = Setting.Friction;
-		CubeRigidBody.Restitution = Setting.Restitution;
-		CubeRigidBody.Position = Setting.Location;
-		CubeRigidBody.Orientation = Setting.Rotation.Quaternion();
+		BoxRigidBody.Mass = Setting.Mass;
+		BoxRigidBody.Inertia = CalculateInertiaBox(BoxRigidBody.Mass, Setting.Scale);
+		BoxRigidBody.Friction = Setting.Friction;
+		BoxRigidBody.Restitution = Setting.Restitution;
+		BoxRigidBody.Position = Setting.Location;
+		BoxRigidBody.Orientation = Setting.Rotation.Quaternion();
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 

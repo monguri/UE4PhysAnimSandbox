@@ -5,11 +5,23 @@
 #include "GameFramework/Actor.h"
 #include "RigidBodiesCustomMesh.generated.h"
 
+UENUM()
+enum class ERigdBodyGeometry : uint8
+{
+	Box,
+	Sphere,
+	Capsule,
+	Cylinder,
+	Tetrahedron,
+};
 
 USTRUCT()
 struct FRigidBodySetting
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	ERigdBodyGeometry Geometry = ERigdBodyGeometry::Box;
 
 	UPROPERTY(EditAnywhere)
 	float Friction = 0.6f;
@@ -96,10 +108,10 @@ private:
 	float Density = 0.1f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	FRotator CubeRot = FRotator::ZeroRotator;
+	FRotator BoxRot = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	FVector CubeScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm cube.
+	FVector BoxScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm box.
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bDirectSet"))
 	TArray<FRigidBodySetting> RigidBodySettings;
