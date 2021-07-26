@@ -30,6 +30,12 @@ namespace
 		return Point;
 	}
 
+	float CalculateMassBox(const FVector& HalfExtent, float Density)
+	{
+		const FVector& Extent = HalfExtent * 2.0f;
+		return Extent.X * Extent.Y * Extent.Z * Density;
+	}
+
 	FMatrix CalculateInertiaBox(float Mass, const FVector& HalfExtent)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
@@ -42,11 +48,40 @@ namespace
 		return Ret;
 	}
 
-	 void CreateConvexCollisionShape(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
-	{
-		CollisionShape.Vertices = Vertices;
-		CollisionShape.Edges.SetNum(Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
-		CollisionShape.Facets.SetNum(Indices.Num());
+	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	 {
+		// TODO:Boxにしかまだ対応してない
+		static TArray<FVector> BoxVertices = 
+		{
+			FVector(-1.0, -1.0, -1.0),
+			FVector(+1.0, -1.0, -1.0),
+			FVector(-1.0, +1.0, -1.0),
+			FVector(+1.0, +1.0, -1.0),
+			FVector(-1.0, -1.0, +1.0),
+			FVector(+1.0, -1.0, +1.0),
+			FVector(-1.0, +1.0, +1.0),
+			FVector(+1.0, +1.0, +1.0),
+		};
+
+		static TArray<FIntVector> BoxIndices = 
+		{
+			FIntVector(0, 1, 2),
+			FIntVector(1, 3, 2),
+			FIntVector(4, 7, 5),
+			FIntVector(4, 6, 7),
+			FIntVector(2, 3, 6),
+			FIntVector(3, 7, 6),
+			FIntVector(1, 0, 5),
+			FIntVector(0, 4, 5),
+			FIntVector(0, 2, 4),
+			FIntVector(2, 6, 4),
+			FIntVector(3, 1, 7),
+			FIntVector(1, 5, 7)
+		};
+
+		CollisionShape.Vertices = BoxVertices;
+		CollisionShape.Edges.SetNum(BoxVertices.Num() + BoxIndices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Facets.SetNum(BoxIndices.Num());
 
 		for (FVector& Vertex : CollisionShape.Vertices)
 		{
@@ -56,15 +91,15 @@ namespace
 		for (int32 i = 0; i < CollisionShape.Facets.Num(); i++)
 		{
 			ARigidBodiesCustomMesh::FFacet& Facet = CollisionShape.Facets[i];
-			Facet.VertId[0] = Indices[i].X;
-			Facet.VertId[1] = Indices[i].Y;
-			Facet.VertId[2] = Indices[i].Z;
+			Facet.VertId[0] = BoxIndices[i].X;
+			Facet.VertId[1] = BoxIndices[i].Y;
+			Facet.VertId[2] = BoxIndices[i].Z;
 		}
 
 		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
-		check(Vertices.Num() < 255);
+		check(CollisionShape.Vertices.Num() < 255);
 		TArray<uint8> EdgeIdTable; // とりあえずuint8なので255エッジまで。FFは識別値に使う
-		EdgeIdTable.SetNum(Vertices.Num() * (Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
+		EdgeIdTable.SetNum(CollisionShape.Vertices.Num() * (CollisionShape.Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
 		for (uint8& EdgeId : EdgeIdTable)
 		{
 			EdgeId = 0xff;
@@ -76,10 +111,11 @@ namespace
 		{
 			ARigidBodiesCustomMesh::FFacet& Facet = CollisionShape.Facets[FacetId];
 
-			const FVector& P0 = Vertices[Facet.VertId[0]];
-			const FVector& P1 = Vertices[Facet.VertId[1]];
-			const FVector& P2 = Vertices[Facet.VertId[2]];
-			Facet.Normal = -FVector::CrossProduct(P1 - P0, P2 - P0); // 左手系
+			const FVector& P0 = CollisionShape.Vertices[Facet.VertId[0]];
+			const FVector& P1 = CollisionShape.Vertices[Facet.VertId[1]];
+			const FVector& P2 = CollisionShape.Vertices[Facet.VertId[2]];
+			// 左手系。三角形の縮退は考慮してない。
+			Facet.Normal = -FVector::CrossProduct(P1 - P0, P2 - P0).GetUnsafeNormal();
 
 			for (int32 TriVert = 0; TriVert < 3; TriVert++)
 			{
@@ -122,7 +158,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			FRigidBodySetting Setting;
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
-			Setting.Mass = BoxScale.X * BoxScale.Y * BoxScale.Z * 8.0f * Density; // 8.0はBoxScaleがHalfExtentなので2x2x2から来ている
+			Setting.Mass = CalculateMassBox(BoxScale, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = BoxRot;
 			Setting.Scale = BoxScale;
@@ -133,39 +169,11 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	NumRigidBodies = RigidBodySettings.Num();
 	NumThreadRBs = (NumRigidBodies + 1 + NumThreads - 1) / NumThreads; // +1はフロアの分
 
-	static TArray<FVector> BoxVertices = 
-	{
-		FVector(-1.0, -1.0, -1.0),
-		FVector(+1.0, -1.0, -1.0),
-		FVector(-1.0, +1.0, -1.0),
-		FVector(+1.0, +1.0, -1.0),
-		FVector(-1.0, -1.0, +1.0),
-		FVector(+1.0, -1.0, +1.0),
-		FVector(-1.0, +1.0, +1.0),
-		FVector(+1.0, +1.0, +1.0),
-	};
-
-	static TArray<FIntVector> BoxIndices = 
-	{
-		FIntVector(0, 1, 2),
-		FIntVector(1, 3, 2),
-		FIntVector(4, 7, 5),
-		FIntVector(4, 6, 7),
-		FIntVector(2, 3, 6),
-		FIntVector(3, 7, 6),
-		FIntVector(1, 0, 5),
-		FIntVector(0, 4, 5),
-		FIntVector(0, 2, 4),
-		FIntVector(2, 6, 4),
-		FIntVector(3, 1, 7),
-		FIntVector(1, 5, 7)
-	};
-
 	RigidBodies.SetNum(NumRigidBodies + 1); // +1はフロアの分
 
 	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
 	FRigidBody& FloorRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(BoxVertices, BoxIndices, FloorScale, FloorRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, FloorRigidBody.CollisionShape);
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = FloorFriction;
@@ -179,7 +187,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
 		FRigidBody& BoxRigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(BoxVertices, BoxIndices, Setting.Scale, BoxRigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, BoxRigidBody.CollisionShape);
 
 		BoxRigidBody.Mass = Setting.Mass;
 		BoxRigidBody.Inertia = CalculateInertiaBox(BoxRigidBody.Mass, Setting.Scale);
