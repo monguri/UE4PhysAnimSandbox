@@ -30,8 +30,10 @@ namespace
 		return Point;
 	}
 
-	FMatrix CalculateInertiaBox(float Mass, FVector Extent)
+	FMatrix CalculateInertiaBox(float Mass, const FVector& HalfExtent)
 	{
+		const FVector& Extent = HalfExtent * 2.0f;
+
 		FMatrix Ret = FMatrix::Identity;
 		Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
 		Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
@@ -120,7 +122,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			FRigidBodySetting Setting;
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
-			Setting.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * Density;
+			Setting.Mass = CubeScale.X * CubeScale.Y * CubeScale.Z * 8.0f * Density; // 8.0‚ÍCubeScale‚ªHalfExtent‚È‚Ì‚Å2x2x2‚©‚ç—ˆ‚Ä‚¢‚é
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = CubeRot;
 			Setting.Scale = CubeScale;
@@ -133,14 +135,14 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	static TArray<FVector> BoxVertices = 
 	{
-		FVector(-0.5, -0.5, -0.5),
-		FVector(+0.5, -0.5, -0.5),
-		FVector(-0.5, +0.5, -0.5),
-		FVector(+0.5, +0.5, -0.5),
-		FVector(-0.5, -0.5, +0.5),
-		FVector(+0.5, -0.5, +0.5),
-		FVector(-0.5, +0.5, +0.5),
-		FVector(+0.5, +0.5, +0.5),
+		FVector(-1.0, -1.0, -1.0),
+		FVector(+1.0, -1.0, -1.0),
+		FVector(-1.0, +1.0, -1.0),
+		FVector(+1.0, +1.0, -1.0),
+		FVector(-1.0, -1.0, +1.0),
+		FVector(+1.0, -1.0, +1.0),
+		FVector(-1.0, +1.0, +1.0),
+		FVector(+1.0, +1.0, +1.0),
 	};
 
 	static TArray<FIntVector> BoxIndices = 
