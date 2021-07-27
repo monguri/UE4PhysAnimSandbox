@@ -50,20 +50,19 @@ namespace
 
 	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	 {
-		// TODO:Boxにしかまだ対応してない
-		static TArray<FVector> BoxVertices = 
+		static const TArray<FVector> BoxVertices = 
 		{
-			FVector(-1.0, -1.0, -1.0),
-			FVector(+1.0, -1.0, -1.0),
-			FVector(-1.0, +1.0, -1.0),
-			FVector(+1.0, +1.0, -1.0),
-			FVector(-1.0, -1.0, +1.0),
-			FVector(+1.0, -1.0, +1.0),
-			FVector(-1.0, +1.0, +1.0),
-			FVector(+1.0, +1.0, +1.0),
+			FVector(-1.0f, -1.0f, -1.0f), // 0
+			FVector(+1.0f, -1.0f, -1.0f), // 1
+			FVector(-1.0f, +1.0f, -1.0f), // 2
+			FVector(+1.0f, +1.0f, -1.0f), // 3
+			FVector(-1.0f, -1.0f, +1.0f), // 4
+			FVector(+1.0f, -1.0f, +1.0f), // 5
+			FVector(-1.0f, +1.0f, +1.0f), // 6
+			FVector(+1.0f, +1.0f, +1.0f), // 7
 		};
 
-		static TArray<FIntVector> BoxIndices = 
+		static const TArray<FIntVector> BoxIndices = 
 		{
 			FIntVector(0, 1, 2),
 			FIntVector(1, 3, 2),
@@ -79,9 +78,65 @@ namespace
 			FIntVector(1, 5, 7)
 		};
 
-		CollisionShape.Vertices = BoxVertices;
-		CollisionShape.Edges.SetNum(BoxVertices.Num() + BoxIndices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
-		CollisionShape.Facets.SetNum(BoxIndices.Num());
+		float CosPIover4 = FMath::Cos(PI * 0.25f);
+		float SinPIover4 = FMath::Cos(PI * 0.25f);
+		const TArray<FVector> SphereVertices =
+		{
+			FVector(0.0f, 0.0f, 1.0f), // 0
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, CosPIover4), // 1
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, CosPIover4), // 2
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, CosPIover4), // 3
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, CosPIover4), // 4
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, CosPIover4), // 5
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, CosPIover4), // 6
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, CosPIover4), // 7
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, CosPIover4), // 8
+
+			FVector(1.0f, 0.0f, 0.0f), // 9
+			FVector(CosPIover4, -SinPIover4, 0.0f), // 10
+			FVector(0.0f, SinPIover4 * -1.0f, 0.0f), // 11
+			FVector(-CosPIover4, -SinPIover4, 0.0f), // 12
+			FVector(-1.0f, 0.0f, 0.0f), // 13
+			FVector(-CosPIover4, SinPIover4, 0.0f), // 14
+			FVector(0.0f, 1.0f, 0.0f), // 15
+			FVector(CosPIover4, SinPIover4, 0.0f), // 16
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, -CosPIover4), // 17
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 18
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, -CosPIover4), // 19
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 20
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, CosPIover4), // 21
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 22
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, -CosPIover4), // 23
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 24
+
+			FVector(0.0f, 0.0f, -1.0f), // 25
+		};
+
+		TArray<FIntVector> Indices;
+
+		switch (Geometry)
+		{
+		case ERigdBodyGeometry::Box:
+			CollisionShape.Vertices = BoxVertices;
+			Indices = BoxIndices;
+			break;
+		case ERigdBodyGeometry::Sphere:
+			break;
+		case ERigdBodyGeometry::Capsule:
+			break;
+		case ERigdBodyGeometry::Cylinder:
+			break;
+		case ERigdBodyGeometry::Tetrahedron:
+			break;
+		default:
+			check(false);
+			break;
+		}
+
+		CollisionShape.Edges.SetNum(BoxVertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Facets.SetNum(Indices.Num());
 
 		for (FVector& Vertex : CollisionShape.Vertices)
 		{
@@ -91,9 +146,9 @@ namespace
 		for (int32 i = 0; i < CollisionShape.Facets.Num(); i++)
 		{
 			ARigidBodiesCustomMesh::FFacet& Facet = CollisionShape.Facets[i];
-			Facet.VertId[0] = BoxIndices[i].X;
-			Facet.VertId[1] = BoxIndices[i].Y;
-			Facet.VertId[2] = BoxIndices[i].Z;
+			Facet.VertId[0] = Indices[i].X;
+			Facet.VertId[1] = Indices[i].Y;
+			Facet.VertId[2] = Indices[i].Z;
 		}
 
 		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
