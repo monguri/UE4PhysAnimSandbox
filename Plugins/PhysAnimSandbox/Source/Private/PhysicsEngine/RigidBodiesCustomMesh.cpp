@@ -30,26 +30,60 @@ namespace
 		return Point;
 	}
 
-	float CalculateMassBox(const FVector& HalfExtent, float Density)
+	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Density)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
-		return Extent.X * Extent.Y * Extent.Z * Density;
+		switch (Geometry)
+		{
+		case ERigdBodyGeometry::Box:
+			return Extent.X * Extent.Y * Extent.Z * Density;
+		case ERigdBodyGeometry::Sphere:
+			return PI * Extent.Y * Extent.Z * Density / 6.0f;
+		case ERigdBodyGeometry::Capsule:
+		case ERigdBodyGeometry::Cylinder:
+		case ERigdBodyGeometry::Tetrahedron:
+			return 1.0f;
+		default:
+			check(false);
+			return 1.0f;
+		}
 	}
 
-	FMatrix CalculateInertiaBox(float Mass, const FVector& HalfExtent)
+	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, const FVector& HalfExtent)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
-
 		FMatrix Ret = FMatrix::Identity;
-		Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
-		Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
-		Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+
+		switch (Geometry)
+		{
+		case ERigdBodyGeometry::Box:
+			Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
+			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
+			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+			break;
+		case ERigdBodyGeometry::Sphere:
+			// TODO;非均一スケールには非対応
+			check(Extent.X == Extent.Y);
+			check(Extent.X == Extent.Z);
+			Ret.M[0][0] = Ret.M[1][1] = Ret.M[2][2] = 0.4f * Mass * (HalfExtent.X * HalfExtent.X);
+			break;
+		case ERigdBodyGeometry::Capsule:
+			break;
+		case ERigdBodyGeometry::Cylinder:
+			break;
+		case ERigdBodyGeometry::Tetrahedron:
+			break;
+		default:
+			check(false);
+			break;
+		}
 
 		return Ret;
 	}
 
 	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	 {
+		// HalfExtentやRadiusが1なのは、ScaleをHalfExtentとして計算している場所があるので必須
 		static const TArray<FVector> BoxVertices = 
 		{
 			FVector(-1.0f, -1.0f, -1.0f), // 0
@@ -270,7 +304,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			FRigidBodySetting Setting;
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
-			Setting.Mass = CalculateMassBox(BoxScale, Density);
+			// TODO:bDirectSet=falseではとりあえずBox
+			Setting.Mass = CalculateMass(ERigdBodyGeometry::Box, BoxScale, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = BoxRot;
 			Setting.Scale = BoxScale;
@@ -298,15 +333,15 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	{
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
-		FRigidBody& BoxRigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, BoxRigidBody.CollisionShape);
+		FRigidBody& RigidBody = RigidBodies[i];
+		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, RigidBody.CollisionShape);
 
-		BoxRigidBody.Mass = Setting.Mass;
-		BoxRigidBody.Inertia = CalculateInertiaBox(BoxRigidBody.Mass, Setting.Scale);
-		BoxRigidBody.Friction = Setting.Friction;
-		BoxRigidBody.Restitution = Setting.Restitution;
-		BoxRigidBody.Position = Setting.Location;
-		BoxRigidBody.Orientation = Setting.Rotation.Quaternion();
+		RigidBody.Mass = Setting.Mass;
+		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Scale);
+		RigidBody.Friction = Setting.Friction;
+		RigidBody.Restitution = Setting.Restitution;
+		RigidBody.Position = Setting.Location;
+		RigidBody.Orientation = Setting.Rotation.Quaternion();
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
