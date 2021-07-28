@@ -80,7 +80,7 @@ namespace
 
 		float CosPIover4 = FMath::Cos(PI * 0.25f);
 		float SinPIover4 = FMath::Cos(PI * 0.25f);
-		const TArray<FVector> SphereVertices =
+		static const TArray<FVector> SphereVertices =
 		{
 			FVector(0.0f, 0.0f, 1.0f), // 0
 
@@ -95,7 +95,7 @@ namespace
 
 			FVector(1.0f, 0.0f, 0.0f), // 9
 			FVector(CosPIover4, -SinPIover4, 0.0f), // 10
-			FVector(0.0f, SinPIover4 * -1.0f, 0.0f), // 11
+			FVector(0.0f, -1.0f, 0.0f), // 11
 			FVector(-CosPIover4, -SinPIover4, 0.0f), // 12
 			FVector(-1.0f, 0.0f, 0.0f), // 13
 			FVector(-CosPIover4, SinPIover4, 0.0f), // 14
@@ -106,12 +106,67 @@ namespace
 			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 18
 			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, -CosPIover4), // 19
 			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 20
-			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, CosPIover4), // 21
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, -CosPIover4), // 21
 			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 22
 			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, -CosPIover4), // 23
 			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 24
 
 			FVector(0.0f, 0.0f, -1.0f), // 25
+		};
+
+		static const TArray<FIntVector> SphereIndices = 
+		{
+			FIntVector(0, 1, 2),
+			FIntVector(0, 2, 3),
+			FIntVector(0, 3, 4),
+			FIntVector(0, 4, 5),
+			FIntVector(0, 5, 6),
+			FIntVector(0, 6, 7),
+			FIntVector(0, 7, 8),
+			FIntVector(0, 8, 1),
+
+			FIntVector(1, 9, 2),
+			FIntVector(2, 9, 10),
+			FIntVector(2, 10, 3),
+			FIntVector(3, 10, 11),
+			FIntVector(3, 11, 4),
+			FIntVector(4, 11, 12),
+			FIntVector(4, 12, 5),
+			FIntVector(5, 12, 13),
+			FIntVector(5, 13, 6),
+			FIntVector(6, 13, 14),
+			FIntVector(6, 14, 7),
+			FIntVector(7, 14, 15),
+			FIntVector(7, 15, 8),
+			FIntVector(8, 15, 16),
+			FIntVector(8, 16, 1),
+			FIntVector(1, 16, 9),
+
+			FIntVector(9, 17, 10),
+			FIntVector(10, 17, 18),
+			FIntVector(10, 18, 11),
+			FIntVector(11, 18, 19),
+			FIntVector(11, 19, 12),
+			FIntVector(12, 19, 20),
+			FIntVector(12, 20, 13),
+			FIntVector(13, 20, 21),
+			FIntVector(13, 21, 14),
+			FIntVector(14, 21, 22),
+			FIntVector(14, 22, 15),
+			FIntVector(15, 22, 23),
+			FIntVector(15, 23, 16),
+			FIntVector(16, 23, 24),
+			FIntVector(16, 24, 9),
+			FIntVector(9, 24, 17),
+
+			FIntVector(17, 25, 18),
+			FIntVector(18, 25, 19),
+			FIntVector(19, 25, 20),
+			FIntVector(20, 25, 21),
+			FIntVector(21, 25, 22),
+			FIntVector(22, 25, 23),
+			FIntVector(23, 25, 24),
+			FIntVector(24, 25, 17),
 		};
 
 		TArray<FIntVector> Indices;
@@ -123,6 +178,8 @@ namespace
 			Indices = BoxIndices;
 			break;
 		case ERigdBodyGeometry::Sphere:
+			CollisionShape.Vertices = SphereVertices;
+			Indices = SphereIndices;
 			break;
 		case ERigdBodyGeometry::Capsule:
 			break;
@@ -135,7 +192,7 @@ namespace
 			break;
 		}
 
-		CollisionShape.Edges.SetNum(BoxVertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
 		CollisionShape.Facets.SetNum(Indices.Num());
 
 		for (FVector& Vertex : CollisionShape.Vertices)
