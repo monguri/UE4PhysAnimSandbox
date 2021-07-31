@@ -41,6 +41,7 @@ namespace
 			return 4.0f / 3.0f * PI * HalfExtent.X * HalfExtent.Y * HalfExtent.Z * Density;
 		case ERigdBodyGeometry::Capsule:
 		case ERigdBodyGeometry::Cylinder:
+			return PI * HalfExtent.X * HalfExtent.Y * Extent.Z * Density;
 		case ERigdBodyGeometry::Tetrahedron:
 			return 1.0f;
 		default:
@@ -69,6 +70,9 @@ namespace
 		case ERigdBodyGeometry::Capsule:
 			break;
 		case ERigdBodyGeometry::Cylinder:
+			Ret.M[0][0] = Mass * (HalfExtent.Y * HalfExtent.Y + Extent.Z * Extent.Z / 3.0f) * 0.25f;
+			Ret.M[1][1] = Mass * (HalfExtent.X * HalfExtent.X + Extent.Z * Extent.Z / 3.0f) * 0.25f;
+			Ret.M[2][2] = Mass * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * 0.25f;
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 			break;
@@ -202,6 +206,69 @@ namespace
 			FIntVector(24, 25, 17),
 		};
 
+		const TArray<FVector> CylinderVertices =
+		{
+			FVector(0.0f, 0.0f, 1.0f), // 0
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, 1.0f), // 1
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, 1.0f), // 2
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, 1.0f), // 3
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, 1.0f), // 4
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, 1.0f), // 5
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, 1.0f), // 6
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, 1.0f), // 7
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, 1.0f), // 8
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, -1.0f), // 9
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, -1.0f), // 10
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, -1.0f), // 11
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, -1.0f), // 12
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, -1.0f), // 13
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, -1.0f), // 14
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, -1.0f), // 15
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, -1.0f), // 16
+
+			FVector(0.0f, 0.0f, -1.0f), // 17
+		};
+
+		static const TArray<FIntVector> CylinderIndices = 
+		{
+			FIntVector(0, 1, 2),
+			FIntVector(0, 2, 3),
+			FIntVector(0, 3, 4),
+			FIntVector(0, 4, 5),
+			FIntVector(0, 5, 6),
+			FIntVector(0, 6, 7),
+			FIntVector(0, 7, 8),
+			FIntVector(0, 8, 1),
+
+			FIntVector(1, 9, 2),
+			FIntVector(2, 9, 10),
+			FIntVector(2, 10, 3),
+			FIntVector(3, 10, 11),
+			FIntVector(3, 11, 4),
+			FIntVector(4, 11, 12),
+			FIntVector(4, 12, 5),
+			FIntVector(5, 12, 13),
+			FIntVector(5, 13, 6),
+			FIntVector(6, 13, 14),
+			FIntVector(6, 14, 7),
+			FIntVector(7, 14, 15),
+			FIntVector(7, 15, 8),
+			FIntVector(8, 15, 16),
+			FIntVector(8, 16, 1),
+			FIntVector(1, 16, 9),
+
+			FIntVector(9, 17, 10),
+			FIntVector(10, 17, 11),
+			FIntVector(11, 17, 12),
+			FIntVector(12, 17, 13),
+			FIntVector(13, 17, 14),
+			FIntVector(14, 17, 15),
+			FIntVector(15, 17, 16),
+			FIntVector(16, 17, 9),
+		};
+
 		TArray<FIntVector> Indices;
 
 		switch (Geometry)
@@ -217,6 +284,8 @@ namespace
 		case ERigdBodyGeometry::Capsule:
 			break;
 		case ERigdBodyGeometry::Cylinder:
+			CollisionShape.Vertices = CylinderVertices;
+			Indices = CylinderIndices;
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 			break;
