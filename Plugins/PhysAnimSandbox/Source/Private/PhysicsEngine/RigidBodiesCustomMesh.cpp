@@ -37,8 +37,8 @@ namespace
 		{
 		case ERigdBodyGeometry::Box:
 			return Extent.X * Extent.Y * Extent.Z * Density;
-		case ERigdBodyGeometry::Sphere:
-			return PI * Extent.Y * Extent.Z * Density / 6.0f;
+		case ERigdBodyGeometry::Ellipsoid:
+			return 4.0f / 3.0f * PI * HalfExtent.X * HalfExtent.Y * HalfExtent.Z * Density;
 		case ERigdBodyGeometry::Capsule:
 		case ERigdBodyGeometry::Cylinder:
 		case ERigdBodyGeometry::Tetrahedron:
@@ -61,11 +61,10 @@ namespace
 			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
 			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
 			break;
-		case ERigdBodyGeometry::Sphere:
-			// TODO;îÒãœàÍÉXÉPÅ[ÉãÇ…ÇÕîÒëŒâû
-			check(Extent.X == Extent.Y);
-			check(Extent.X == Extent.Z);
-			Ret.M[0][0] = Ret.M[1][1] = Ret.M[2][2] = 0.4f * Mass * (HalfExtent.X * HalfExtent.X);
+		case ERigdBodyGeometry::Ellipsoid:
+			Ret.M[0][0] = Mass * (HalfExtent.Y * HalfExtent.Y + HalfExtent.Z * HalfExtent.Z) * 0.2f;
+			Ret.M[1][1] = Mass * (HalfExtent.Z * HalfExtent.Z + HalfExtent.X * HalfExtent.X) * 0.2f;
+			Ret.M[2][2] = Mass * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * 0.2f;
 			break;
 		case ERigdBodyGeometry::Capsule:
 			break;
@@ -114,7 +113,7 @@ namespace
 
 		float CosPIover4 = FMath::Cos(PI * 0.25f);
 		float SinPIover4 = FMath::Cos(PI * 0.25f);
-		static const TArray<FVector> SphereVertices =
+		static const TArray<FVector> EllipsoidVertices =
 		{
 			FVector(0.0f, 0.0f, 1.0f), // 0
 
@@ -148,7 +147,7 @@ namespace
 			FVector(0.0f, 0.0f, -1.0f), // 25
 		};
 
-		static const TArray<FIntVector> SphereIndices = 
+		static const TArray<FIntVector> EllipsoidIndices = 
 		{
 			FIntVector(0, 1, 2),
 			FIntVector(0, 2, 3),
@@ -211,9 +210,9 @@ namespace
 			CollisionShape.Vertices = BoxVertices;
 			Indices = BoxIndices;
 			break;
-		case ERigdBodyGeometry::Sphere:
-			CollisionShape.Vertices = SphereVertices;
-			Indices = SphereIndices;
+		case ERigdBodyGeometry::Ellipsoid:
+			CollisionShape.Vertices = EllipsoidVertices;
+			Indices = EllipsoidIndices;
 			break;
 		case ERigdBodyGeometry::Capsule:
 			break;

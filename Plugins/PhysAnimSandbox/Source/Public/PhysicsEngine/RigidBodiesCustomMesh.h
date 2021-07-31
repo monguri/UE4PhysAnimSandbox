@@ -9,7 +9,7 @@ UENUM()
 enum class ERigdBodyGeometry : uint8
 {
 	Box,
-	Sphere,
+	Ellipsoid,
 	Capsule,
 	Cylinder,
 	Tetrahedron,
