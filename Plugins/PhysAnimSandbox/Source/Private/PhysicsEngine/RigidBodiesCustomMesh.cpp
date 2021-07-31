@@ -206,7 +206,7 @@ namespace
 			FIntVector(24, 25, 17),
 		};
 
-		const TArray<FVector> CylinderVertices =
+		static const TArray<FVector> CylinderVertices =
 		{
 			FVector(0.0f, 0.0f, 1.0f), // 0
 
