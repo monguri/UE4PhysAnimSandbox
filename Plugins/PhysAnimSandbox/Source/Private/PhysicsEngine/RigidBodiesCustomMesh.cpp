@@ -520,7 +520,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			Setting.Mass = CalculateMass(Geometry, HalfExtent, Height, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = Rotation;
-			Setting.Scale = HalfExtent;
+			Setting.HalfExtent = HalfExtent;
 			Setting.Density = Density;
 			Setting.Height = Height;
 			RigidBodySettings.Add(Setting);
@@ -548,10 +548,10 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
 		FRigidBody& RigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, Setting.Height, RigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, RigidBody.CollisionShape);
 
 		RigidBody.Mass = Setting.Mass;
-		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.Scale, Setting.Height);
+		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height);
 		RigidBody.Friction = Setting.Friction;
 		RigidBody.Restitution = Setting.Restitution;
 		RigidBody.Position = Setting.Location;

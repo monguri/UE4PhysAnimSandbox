@@ -39,7 +39,7 @@ struct FRigidBodySetting
 	FRotator Rotation = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere)
-	FVector Scale = FVector::ZeroVector;
+	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f);
 
 	UPROPERTY(EditAnywhere)
 	float Density = 0.1f; // for only capsule
@@ -120,7 +120,7 @@ private:
 	FRotator Rotation = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm box.
+	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f);
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	float Height = 10.0f; // for capsule only
