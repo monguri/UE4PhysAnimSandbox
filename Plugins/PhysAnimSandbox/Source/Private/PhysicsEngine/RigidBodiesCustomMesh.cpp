@@ -513,13 +513,16 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		for (int32 i = 0; i < NumRigidBodies; i++)
 		{
 			FRigidBodySetting Setting;
+			Setting.Geometry = Geometry;
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
 			// TODO:bDirectSet=false‚Å‚Í‚Æ‚è‚ ‚¦‚¸Box
-			Setting.Mass = CalculateMass(ERigdBodyGeometry::Box, BoxScale, Height, Density);
+			Setting.Mass = CalculateMass(Geometry, HalfExtent, Height, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
-			Setting.Rotation = BoxRot;
-			Setting.Scale = BoxScale;
+			Setting.Rotation = Rotation;
+			Setting.Scale = HalfExtent;
+			Setting.Density = Density;
+			Setting.Height = Height;
 			RigidBodySettings.Add(Setting);
 		}
 	}

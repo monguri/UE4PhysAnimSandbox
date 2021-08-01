@@ -105,6 +105,9 @@ private:
 	int32 NumRigidBodies = 1;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	ERigdBodyGeometry Geometry = ERigdBodyGeometry::Box;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	float Friction = 0.6f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
@@ -114,10 +117,10 @@ private:
 	float Density = 0.1f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	FRotator BoxRot = FRotator::ZeroRotator;
+	FRotator Rotation = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
-	FVector BoxScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm box.
+	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm box.
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	float Height = 10.0f; // for capsule only
