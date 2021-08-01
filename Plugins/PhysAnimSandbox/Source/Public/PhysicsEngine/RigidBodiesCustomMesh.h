@@ -40,6 +40,12 @@ struct FRigidBodySetting
 
 	UPROPERTY(EditAnywhere)
 	FVector Scale = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere)
+	float Density = 0.1f; // for only capsule
+
+	UPROPERTY(EditAnywhere)
+	float Height = 10.0f; // for only capsule
 };
 
 UCLASS()
@@ -112,6 +118,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	FVector BoxScale = FVector(10.0f, 10.0f, 10.0f); // for 1cm x 1cm x 1cm box.
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	float Height = 10.0f; // for capsule only
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bDirectSet"))
 	TArray<FRigidBodySetting> RigidBodySettings;

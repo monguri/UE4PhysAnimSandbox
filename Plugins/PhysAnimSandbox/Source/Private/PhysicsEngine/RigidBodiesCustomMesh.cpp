@@ -30,7 +30,7 @@ namespace
 		return Point;
 	}
 
-	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Density)
+	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Height, float Density)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
 		switch (Geometry)
@@ -40,6 +40,7 @@ namespace
 		case ERigdBodyGeometry::Ellipsoid:
 			return 4.0f / 3.0f * PI * HalfExtent.X * HalfExtent.Y * HalfExtent.Z * Density;
 		case ERigdBodyGeometry::Capsule:
+			return PI * Density * HalfExtent.X * HalfExtent.Y * (4.0f / 3.0f * HalfExtent.Z + Height);
 		case ERigdBodyGeometry::Cylinder:
 			return PI * HalfExtent.X * HalfExtent.Y * Extent.Z * Density;
 		case ERigdBodyGeometry::Tetrahedron:
@@ -50,7 +51,7 @@ namespace
 		}
 	}
 
-	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, const FVector& HalfExtent)
+	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
 		FMatrix Ret = FMatrix::Identity;
@@ -68,6 +69,9 @@ namespace
 			Ret.M[2][2] = Mass * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * 0.2f;
 			break;
 		case ERigdBodyGeometry::Capsule:
+			Ret.M[0][0] = Density * PI * HalfExtent.X * HalfExtent.Y / 60.0f * (16.0f * HalfExtent.Z * HalfExtent.Z * HalfExtent.Z + 30.0f * HalfExtent.Z * HalfExtent.Z * Height + 20.0f * HalfExtent.Z * Height * Height + 16.0f * HalfExtent.Z * HalfExtent.Y * HalfExtent.Y + 15.0f * HalfExtent.Y * HalfExtent.Y * Height + 5.0f * Height * Height * Height);
+			Ret.M[1][1] = Density * PI * HalfExtent.X * HalfExtent.Y / 60.0f * (16.0f * HalfExtent.Z * HalfExtent.Z * HalfExtent.Z + 30.0f * HalfExtent.Z * HalfExtent.Z * Height + 20.0f * HalfExtent.Z * Height * Height + 16.0f * HalfExtent.Z * HalfExtent.X * HalfExtent.X + 15.0f * HalfExtent.X * HalfExtent.X * Height + 5.0f * Height * Height * Height);
+			Ret.M[2][2] = Density * PI * HalfExtent.X * HalfExtent.Y / 60.0f * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * (15.0f * Height + 16.0f * HalfExtent.Z);
 			break;
 		case ERigdBodyGeometry::Cylinder:
 			Ret.M[0][0] = Mass * (HalfExtent.Y * HalfExtent.Y + Extent.Z * Extent.Z / 3.0f) * 0.25f;
@@ -84,7 +88,7 @@ namespace
 		return Ret;
 	}
 
-	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	 {
 		// HalfExtentやRadiusが1なのは、ScaleをHalfExtentとして計算している場所があるので必須
 		static const TArray<FVector> BoxVertices = 
@@ -210,23 +214,23 @@ namespace
 		{
 			FVector(0.0f, 0.0f, 1.0f), // 0
 
-			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, 1.0f), // 1
-			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, 1.0f), // 2
-			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, 1.0f), // 3
-			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, 1.0f), // 4
-			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, 1.0f), // 5
-			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, 1.0f), // 6
-			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, 1.0f), // 7
-			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, 1.0f), // 8
+			FVector(1.0f, 0.0f, 1.0f), // 1
+			FVector(CosPIover4, -SinPIover4, 1.0f), // 2
+			FVector(0.0f, -1.0f, 1.0f), // 3
+			FVector(-CosPIover4, -SinPIover4, 1.0f), // 4
+			FVector(-1.0f, 0.0f, 1.0f), // 5
+			FVector(-CosPIover4, SinPIover4, 1.0f), // 6
+			FVector(0.0f, 1.0f, 1.0f), // 7
+			FVector(CosPIover4, SinPIover4, 1.0f), // 8
 
-			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, -1.0f), // 9
-			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, -1.0f), // 10
-			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, -1.0f), // 11
-			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, -1.0f), // 12
-			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, -1.0f), // 13
-			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, -1.0f), // 14
-			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, -1.0f), // 15
-			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, -1.0f), // 16
+			FVector(1.0f, 0.0f, -1.0f), // 9
+			FVector(CosPIover4, -SinPIover4, -1.0f), // 10
+			FVector(0.0f, -1.0f, -1.0f), // 11
+			FVector(-CosPIover4, -SinPIover4, -1.0f), // 12
+			FVector(-1.0f, 0.0f, -1.0f), // 13
+			FVector(-CosPIover4, SinPIover4, -1.0f), // 14
+			FVector(0.0f, 1.0f, -1.0f), // 15
+			FVector(CosPIover4, SinPIover4, -1.0f), // 16
 
 			FVector(0.0f, 0.0f, -1.0f), // 17
 		};
@@ -269,6 +273,126 @@ namespace
 			FIntVector(16, 17, 9),
 		};
 
+		const TArray<FVector> CapsuleVertices =
+		{
+			// 上半球部分および円柱部分。+Height/2 + Radius_Zは後から行う
+			FVector(0.0f, 0.0f, 1.0f), // 0
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, CosPIover4), // 1
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, CosPIover4), // 2
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, CosPIover4), // 3
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, CosPIover4), // 4
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, CosPIover4), // 5
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, CosPIover4), // 6
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, CosPIover4), // 7
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, CosPIover4), // 8
+
+			FVector(1.0f, 0.0f, 0.0f), // 9
+			FVector(CosPIover4, -SinPIover4, 0.0f), // 10
+			FVector(0.0f, -1.0f, 0.0f), // 11
+			FVector(-CosPIover4, -SinPIover4, 0.0f), // 12
+			FVector(-1.0f, 0.0f, 0.0f), // 13
+			FVector(-CosPIover4, SinPIover4, 0.0f), // 14
+			FVector(0.0f, 1.0f, 0.0f), // 15
+			FVector(CosPIover4, SinPIover4, 0.0f), // 16
+
+			// 下半球部分および円柱部分。-Height/2 - Radius_Zは後から行う
+			FVector(1.0f, 0.0f, 0.0f), // 17
+			FVector(CosPIover4, -SinPIover4, 0.0f), // 18
+			FVector(0.0f, -1.0f, 0.0f), // 19
+			FVector(-CosPIover4, -SinPIover4, 0.0f), // 20
+			FVector(-1.0f, 0.0f, 0.0f), // 21
+			FVector(-CosPIover4, SinPIover4, 0.0f), // 22
+			FVector(0.0f, 1.0f, 0.0f), // 23
+			FVector(CosPIover4, SinPIover4, 0.0f), // 24
+
+			FVector(SinPIover4 * 1.0f, SinPIover4 * 0.0f, -CosPIover4), // 25
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 26
+			FVector(SinPIover4 * 0.0f, SinPIover4 * -1.0f, -CosPIover4), // 27
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * -SinPIover4, -CosPIover4), // 28
+			FVector(SinPIover4 * -1.0f, SinPIover4 * 0.0f, -CosPIover4), // 29
+			FVector(SinPIover4 * -CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 30
+			FVector(SinPIover4 * 0.0f, SinPIover4 * 1.0f, -CosPIover4), // 31
+			FVector(SinPIover4 * CosPIover4, SinPIover4 * SinPIover4, -CosPIover4), // 32
+
+			FVector(0.0f, 0.0f, -1.0f), // 33
+		};
+
+		const TArray<FIntVector> CapsuleIndices = 
+		{
+			// 上半球部分
+			FIntVector(0, 1, 2),
+			FIntVector(0, 2, 3),
+			FIntVector(0, 3, 4),
+			FIntVector(0, 4, 5),
+			FIntVector(0, 5, 6),
+			FIntVector(0, 6, 7),
+			FIntVector(0, 7, 8),
+			FIntVector(0, 8, 1),
+
+			FIntVector(1, 9, 2),
+			FIntVector(2, 9, 10),
+			FIntVector(2, 10, 3),
+			FIntVector(3, 10, 11),
+			FIntVector(3, 11, 4),
+			FIntVector(4, 11, 12),
+			FIntVector(4, 12, 5),
+			FIntVector(5, 12, 13),
+			FIntVector(5, 13, 6),
+			FIntVector(6, 13, 14),
+			FIntVector(6, 14, 7),
+			FIntVector(7, 14, 15),
+			FIntVector(7, 15, 8),
+			FIntVector(8, 15, 16),
+			FIntVector(8, 16, 1),
+			FIntVector(1, 16, 9),
+
+			// 円柱部分
+			FIntVector(9, 17, 10),
+			FIntVector(10, 17, 18),
+			FIntVector(10, 18, 11),
+			FIntVector(11, 18, 19),
+			FIntVector(11, 19, 12),
+			FIntVector(12, 19, 20),
+			FIntVector(12, 20, 13),
+			FIntVector(13, 20, 21),
+			FIntVector(13, 21, 14),
+			FIntVector(14, 21, 22),
+			FIntVector(14, 22, 15),
+			FIntVector(15, 22, 23),
+			FIntVector(15, 23, 16),
+			FIntVector(16, 23, 24),
+			FIntVector(16, 24, 9),
+			FIntVector(9, 24, 17),
+
+			// 下半球部分
+			FIntVector(17, 25, 18),
+			FIntVector(18, 25, 26),
+			FIntVector(18, 26, 19),
+			FIntVector(19, 26, 27),
+			FIntVector(19, 27, 20),
+			FIntVector(20, 27, 28),
+			FIntVector(20, 28, 21),
+			FIntVector(21, 28, 29),
+			FIntVector(21, 29, 22),
+			FIntVector(22, 29, 30),
+			FIntVector(22, 30, 23),
+			FIntVector(23, 30, 31),
+			FIntVector(23, 31, 24),
+			FIntVector(24, 31, 32),
+			FIntVector(24, 32, 17),
+			FIntVector(17, 32, 25),
+
+			FIntVector(25, 33, 26),
+			FIntVector(26, 33, 27),
+			FIntVector(27, 33, 28),
+			FIntVector(28, 33, 29),
+			FIntVector(29, 33, 30),
+			FIntVector(30, 33, 31),
+			FIntVector(31, 33, 32),
+			FIntVector(32, 33, 25),
+		};
+
 		TArray<FIntVector> Indices;
 
 		switch (Geometry)
@@ -282,6 +406,8 @@ namespace
 			Indices = EllipsoidIndices;
 			break;
 		case ERigdBodyGeometry::Capsule:
+			CollisionShape.Vertices = CapsuleVertices;
+			Indices = CapsuleIndices;
 			break;
 		case ERigdBodyGeometry::Cylinder:
 			CollisionShape.Vertices = CylinderVertices;
@@ -300,6 +426,23 @@ namespace
 		for (FVector& Vertex : CollisionShape.Vertices)
 		{
 			Vertex *= Scale;
+		}
+
+		// カプセルの場合はスケールだけでなくHeightの影響もプラス
+		if (Geometry == ERigdBodyGeometry::Capsule)
+		{
+			for (int32 i = 0; i < CollisionShape.Vertices.Num(); i++)
+			{
+				FVector& Vertex = CollisionShape.Vertices[i];
+				if (i < 17)
+				{
+					Vertex += FVector(0.0f, 0.0f, Height * 0.5f);
+				}
+				else
+				{
+					Vertex -= FVector(0.0f, 0.0f, Height * 0.5f);
+				}
+			}
 		}
 
 		for (int32 i = 0; i < CollisionShape.Facets.Num(); i++)
@@ -373,7 +516,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
 			// TODO:bDirectSet=falseではとりあえずBox
-			Setting.Mass = CalculateMass(ERigdBodyGeometry::Box, BoxScale, Density);
+			Setting.Mass = CalculateMass(ERigdBodyGeometry::Box, BoxScale, Height, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = BoxRot;
 			Setting.Scale = BoxScale;
@@ -388,7 +531,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
 	FRigidBody& FloorRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, FloorRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, FloorRigidBody.CollisionShape);
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = FloorFriction;
@@ -402,10 +545,10 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
 
 		FRigidBody& RigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, RigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.Scale, Setting.Height, RigidBody.CollisionShape);
 
 		RigidBody.Mass = Setting.Mass;
-		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Scale);
+		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.Scale, Setting.Height);
 		RigidBody.Friction = Setting.Friction;
 		RigidBody.Restitution = Setting.Restitution;
 		RigidBody.Position = Setting.Location;
