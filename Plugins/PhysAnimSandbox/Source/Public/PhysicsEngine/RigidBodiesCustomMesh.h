@@ -61,6 +61,9 @@ public:
 
 private:
 	UPROPERTY(EditAnywhere)
+	bool bDebugDrawContact = false;
+
+	UPROPERTY(EditAnywhere)
 	int32 NumThreads = 4;
 
 	UPROPERTY(EditAnywhere)
@@ -71,6 +74,7 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float Gravity = -981.0f;
+
 	UPROPERTY(EditAnywhere)
 	float ContactBias = 0.1f;
 
@@ -96,6 +100,9 @@ private:
 	bool bDirectSet = false;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	bool bRandom = false;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	float InitPosRadius = 50.0f;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
@@ -104,7 +111,7 @@ private:
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
 	int32 NumRigidBodies = 1;
 
-	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet && !bRandom"))
 	ERigdBodyGeometry Geometry = ERigdBodyGeometry::Box;
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "!bDirectSet"))
