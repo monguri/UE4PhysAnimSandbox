@@ -273,7 +273,7 @@ namespace
 			FIntVector(16, 17, 9),
 		};
 
-		const TArray<FVector> CapsuleVertices =
+		static const TArray<FVector> CapsuleVertices =
 		{
 			// ã”¼‹…•”•ª‚¨‚æ‚Ñ‰~’Œ•”•ªB+Height/2 + Radius_Z‚ÍŒã‚©‚çs‚¤
 			FVector(0.0f, 0.0f, 1.0f), // 0
@@ -318,7 +318,7 @@ namespace
 			FVector(0.0f, 0.0f, -1.0f), // 33
 		};
 
-		const TArray<FIntVector> CapsuleIndices = 
+		static const TArray<FIntVector> CapsuleIndices = 
 		{
 			// ã”¼‹…•”•ª
 			FIntVector(0, 1, 2),
