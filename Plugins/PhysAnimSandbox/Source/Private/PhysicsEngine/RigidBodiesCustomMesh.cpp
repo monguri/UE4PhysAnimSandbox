@@ -393,6 +393,23 @@ namespace
 			FIntVector(32, 33, 25),
 		};
 
+		static const TArray<FVector> TetrahedronVertices = 
+		{
+			FVector(0.0f, 0.0f, 0.0f), // 0
+			FVector(1.0f, 0.0f, 0.0f), // 1
+			FVector(0.0f, 1.0f, 0.0f), // 2
+			FVector(0.0f, 0.0f, 1.0f), // 3
+		};
+
+		static const TArray<FIntVector> TetrahedronIndices = 
+		{
+			FIntVector(0, 1, 2),
+			FIntVector(0, 3, 1),
+			FIntVector(0, 2, 3),
+			FIntVector(1, 3, 2),
+		};
+
+
 		TArray<FIntVector> Indices;
 
 		switch (Geometry)
@@ -414,6 +431,8 @@ namespace
 			Indices = CylinderIndices;
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
+			CollisionShape.Vertices = TetrahedronVertices;
+			Indices = TetrahedronIndices;
 			break;
 		default:
 			check(false);
