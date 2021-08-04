@@ -44,7 +44,7 @@ namespace
 		case ERigdBodyGeometry::Cylinder:
 			return PI * HalfExtent.X * HalfExtent.Y * Extent.Z * Density;
 		case ERigdBodyGeometry::Tetrahedron:
-			return 1.0f;
+			return HalfExtent.X * HalfExtent.Y * 0.5f * HalfExtent.Z / 3.0f * Density;
 		default:
 			check(false);
 			return 1.0f;
@@ -79,6 +79,18 @@ namespace
 			Ret.M[2][2] = Mass * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * 0.25f;
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
+		{
+			float kx = HalfExtent.X;
+			float ky = HalfExtent.Y;
+			float kz = HalfExtent.Z;
+			float kxx = HalfExtent.X * HalfExtent.X;
+			float kyy = HalfExtent.Y * HalfExtent.Y;
+			float kzz = HalfExtent.Z * HalfExtent.Z;
+			float kxy = 0.0f;
+			float kyy = 0.0f;
+			float kzz = 0.0f;
+			// TODO:‚â‚è‚©‚¯
+		}
 			break;
 		default:
 			check(false);
@@ -534,7 +546,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			FRigidBodySetting Setting;
 			if (bRandom)
 			{
-				Setting.Geometry = static_cast<ERigdBodyGeometry>(i % 4);
+				Setting.Geometry = static_cast<ERigdBodyGeometry>(i % 5);
 			}
 			else
 			{
