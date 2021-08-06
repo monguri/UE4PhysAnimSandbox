@@ -80,16 +80,19 @@ namespace
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 		{
-			float kx = HalfExtent.X;
-			float ky = HalfExtent.Y;
-			float kz = HalfExtent.Z;
-			float kxx = HalfExtent.X * HalfExtent.X;
-			float kyy = HalfExtent.Y * HalfExtent.Y;
-			float kzz = HalfExtent.Z * HalfExtent.Z;
-			float kxy = 0.0f;
-			float kyy = 0.0f;
-			float kzz = 0.0f;
-			// TODO:‚â‚è‚©‚¯
+			Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
+			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
+			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+			//float kx = HalfExtent.X;
+			//float ky = HalfExtent.Y;
+			//float kz = HalfExtent.Z;
+			//float kxx = HalfExtent.X * HalfExtent.X;
+			//float kyy = HalfExtent.Y * HalfExtent.Y;
+			//float kzz = HalfExtent.Z * HalfExtent.Z;
+			//float kxy = 0.0f;
+			//float kyy = 0.0f;
+			//float kzz = 0.0f;
+			//// TODO:‚â‚è‚©‚¯
 		}
 			break;
 		default:
