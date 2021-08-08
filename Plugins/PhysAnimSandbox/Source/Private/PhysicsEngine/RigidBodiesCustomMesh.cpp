@@ -44,7 +44,7 @@ namespace
 		case ERigdBodyGeometry::Cylinder:
 			return PI * HalfExtent.X * HalfExtent.Y * Extent.Z * Density;
 		case ERigdBodyGeometry::Tetrahedron:
-			return HalfExtent.X * HalfExtent.Y * 0.5f * HalfExtent.Z / 3.0f * Density;
+			return HalfExtent.X * HalfExtent.Y * HalfExtent.Z / 6.0f * Density;
 		default:
 			check(false);
 			return 1.0f;
@@ -80,19 +80,12 @@ namespace
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 		{
-			Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
-			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
-			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
-			//float kx = HalfExtent.X;
-			//float ky = HalfExtent.Y;
-			//float kz = HalfExtent.Z;
-			//float kxx = HalfExtent.X * HalfExtent.X;
-			//float kyy = HalfExtent.Y * HalfExtent.Y;
-			//float kzz = HalfExtent.Z * HalfExtent.Z;
-			//float kxy = 0.0f;
-			//float kyy = 0.0f;
-			//float kzz = 0.0f;
-			//// TODO:やりかけ
+			Ret.M[0][0] = Mass * (HalfExtent.Y * HalfExtent.Y + HalfExtent.Z * HalfExtent.Z) * 3.0f / 80.0f;
+			Ret.M[1][1] = Mass * (HalfExtent.Z * HalfExtent.Z + HalfExtent.X * HalfExtent.X) * 3.0f / 80.0f;
+			Ret.M[2][2] = Mass * (HalfExtent.X * HalfExtent.X + HalfExtent.Y * HalfExtent.Y) * 3.0f / 80.0f;
+			Ret.M[0][1] = Ret.M[1][0] = Mass * (HalfExtent.X * HalfExtent.Y) / 80.0f;
+			Ret.M[1][2] = Ret.M[2][1] = Mass * (HalfExtent.Y * HalfExtent.Z) / 80.0f;
+			Ret.M[2][0] = Ret.M[0][2] = Mass * (HalfExtent.Z * HalfExtent.X) / 80.0f;
 		}
 			break;
 		default:
@@ -408,6 +401,7 @@ namespace
 			FIntVector(32, 33, 25),
 		};
 
+		// 他のジオメトリはモデル座標の原点を重心にしているが、四面体は原点を頂点0とした方がわかりやすいので後から重心座標に変換する
 		static const TArray<FVector> TetrahedronVertices = 
 		{
 			FVector(0.0f, 0.0f, 0.0f), // 0
@@ -457,11 +451,22 @@ namespace
 		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
 		CollisionShape.Facets.SetNum(Indices.Num());
 
+		// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
+		if (Geometry == ERigdBodyGeometry::Tetrahedron)
+		{
+			const FVector& CoM = FVector(0.25f);
+
+			for (FVector& Vertex : CollisionShape.Vertices)
+			{
+				Vertex -= CoM;
+			}
+		}
+
 		for (FVector& Vertex : CollisionShape.Vertices)
 		{
 			Vertex *= Scale;
 		}
-
+ 
 		// カプセルの場合はスケールだけでなくHeightの影響もプラス
 		if (Geometry == ERigdBodyGeometry::Capsule)
 		{
