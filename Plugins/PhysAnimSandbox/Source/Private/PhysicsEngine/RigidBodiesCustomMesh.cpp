@@ -925,8 +925,12 @@ namespace
 	}
 };
 
+DECLARE_CYCLE_STAT(TEXT("RigidBody_DetectCollision"), STAT_RigidBody_DetectCollision, STATGROUP_Physics);
+
 void ARigidBodiesCustomMesh::DetectCollision()
 {
+	SCOPE_CYCLE_COUNTER(STAT_RigidBody_DetectCollision);
+
 	int32 ContactPairIdx = 0;
 
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
@@ -1000,8 +1004,12 @@ namespace
 	}
 }
 
+DECLARE_CYCLE_STAT(TEXT("RigidBody_SolveConstraint"), STAT_RigidBody_SolveConstraint, STATGROUP_Physics);
+
 void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 {
+	SCOPE_CYCLE_COUNTER(STAT_RigidBody_SolveConstraint);
+
 	// コンストレイントソルバー用の剛体ワークデータを設定
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
@@ -1262,8 +1270,12 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	//UE_LOG(LogTemp, Log, TEXT("=======================================================")); // 改行
 }
 
+DECLARE_CYCLE_STAT(TEXT("RigidBody_Integrate"), STAT_RigidBody_Integrate, STATGROUP_Physics);
+
 void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 {
+	SCOPE_CYCLE_COUNTER(STAT_RigidBody_Integrate);
+
 	// TODO:フロアをStatic扱いするのをとりあえずIntegrateのスキップで行う
 	if (RBIdx == 0)
 	{
