@@ -574,12 +574,19 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	}
 
 	NumRigidBodies = RigidBodySettings.Num();
-	NumThreadRBs = (NumRigidBodies + 1 + NumThreads - 1) / NumThreads; // +1はフロアの分
+	NumThreadRBs = (NumRigidBodies + 2 + NumThreads - 1) / NumThreads; // +2は弾とフロアの分
 
-	RigidBodies.SetNum(NumRigidBodies + 1); // +1はフロアの分
+	RigidBodies.SetNum(NumRigidBodies + 2); // +2は弾とフロアの分
 
-	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
-	FRigidBody& FloorRigidBody = RigidBodies[0];
+	// RigidBodiesは0番目は弾で1番目はフロアに。2番目以降が各剛体。
+	FRigidBody& AmmoRigidBody = RigidBodies[0];
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FVector(50.0f), 0.0f, AmmoRigidBody.CollisionShape);
+	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
+	AmmoRigidBody.Mass = 0.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
+	AmmoRigidBody.Inertia = FMatrix::Identity; // 弾はStaticなので無限質量扱いにしてるので使っていない
+	AmmoRigidBody.Position = FVector(1000.0f, 1000.0f, 1000.0f);
+
+	FRigidBody& FloorRigidBody = RigidBodies[1];
 	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, FloorRigidBody.CollisionShape);
 	FloorRigidBody.MotionType = ERigdBodyMotionType::Static;
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
@@ -590,9 +597,9 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FloorRigidBody.Orientation = FloorRotation.Quaternion();
 	// TODO:とりあえずその他の物理パラメータは初期値のまま
 
-	for (int32 i = 1; i < NumRigidBodies + 1; i++)
+	for (int32 i = 2; i < NumRigidBodies + 2; i++)
 	{
-		const FRigidBodySetting& Setting = RigidBodySettings[i - 1];
+		const FRigidBodySetting& Setting = RigidBodySettings[i - 2];
 
 		FRigidBody& RigidBody = RigidBodies[i];
 		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, RigidBody.CollisionShape);
@@ -612,19 +619,19 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	Joints.SetNum(JointSettings.Num());
 	for (int32 i = 0; i < JointSettings.Num(); i++)
 	{
-		Joints[i].RigidBodyA_Idx = JointSettings[i].RigidBodyA_Idx + 1; // フロアは固定で0なので+1
-		Joints[i].RigidBodyB_Idx = JointSettings[i].RigidBodyB_Idx + 1; // フロアは固定で0なので+1
+		Joints[i].RigidBodyA_Idx = JointSettings[i].RigidBodyA_Idx + 2; // +2は弾とフロアの分
+		Joints[i].RigidBodyB_Idx = JointSettings[i].RigidBodyB_Idx + 2; // +2は弾とフロアの分
 		Joints[i].Bias = JointSettings[i].Bias;
 		Joints[i].AnchorA = JointSettings[i].AnchorA;
 		Joints[i].AnchorB = JointSettings[i].AnchorB;
 	}
 
-	ContactPairs.SetNum(((NumRigidBodies + 1) * NumRigidBodies) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
+	ContactPairs.SetNum(((NumRigidBodies + 2) * (NumRigidBodies + 1)) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
 
 	int32 ContactPairIdx = 0;
-	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	for (int32 i = 0; i < NumRigidBodies + 2; i++)
 	{
-		for (int32 j = i + 1; j < NumRigidBodies + 1; j++)
+		for (int32 j = i + 1; j < NumRigidBodies + 2; j++)
 		{
 			ContactPairs[ContactPairIdx].RigidBodyA_Idx = i;
 			ContactPairs[ContactPairIdx].RigidBodyB_Idx = j;
@@ -632,7 +639,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		}
 	}
 
-	SolverBodies.SetNum(NumRigidBodies + 1);
+	SolverBodies.SetNum(NumRigidBodies + 2);
 }
 
 void ARigidBodiesCustomMesh::Tick(float DeltaSeconds)
@@ -660,7 +667,7 @@ void ARigidBodiesCustomMesh::Simulate(float DeltaSeconds)
 	ParallelFor(NumThreads,
 		[this, DeltaSeconds](int32 ThreadIndex)
 		{
-			for (int32 RBIdx = NumThreadRBs * ThreadIndex; RBIdx < NumThreadRBs * (ThreadIndex + 1) && RBIdx < NumRigidBodies + 1; ++RBIdx)
+			for (int32 RBIdx = NumThreadRBs * ThreadIndex; RBIdx < NumThreadRBs * (ThreadIndex + 1) && RBIdx < NumRigidBodies + 2; ++RBIdx)
 			{
 				Integrate(RBIdx, DeltaSeconds);
 			}
@@ -947,9 +954,9 @@ void ARigidBodiesCustomMesh::DetectCollision()
 
 	int32 ContactPairIdx = 0;
 
-	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	for (int32 i = 0; i < NumRigidBodies + 2; i++)
 	{
-		for (int32 j = i + 1; j < NumRigidBodies + 1; j++)
+		for (int32 j = i + 1; j < NumRigidBodies + 2; j++)
 		{
 			const FRigidBody& RigidBodyA = RigidBodies[i];
 			const FRigidBody& RigidBodyB = RigidBodies[j];
@@ -1039,7 +1046,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	SCOPE_CYCLE_COUNTER(STAT_RigidBody_SolveConstraint);
 
 	// コンストレイントソルバー用の剛体ワークデータを設定
-	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	for (int32 i = 0; i < NumRigidBodies + 2; i++)
 	{
 		const FRigidBody& RigidBody = RigidBodies[i];
 		FSolverBody& SolverBody = SolverBodies[i];
@@ -1358,7 +1365,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	}
 
 	// 速度を更新
-	for (int32 i = 0; i < NumRigidBodies + 1; i++)
+	for (int32 i = 0; i < NumRigidBodies + 2; i++)
 	{
 		// StaticであればInvMassやInvInertiaTensorが0なのでDeltaLinearVelocityとDeltaAngularVelocityも0だが一応。
 		if (RigidBodies[i].MotionType == ERigdBodyMotionType::Static)
