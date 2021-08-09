@@ -608,8 +608,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	Joints.SetNum(JointSettings.Num());
 	for (int32 i = 0; i < JointSettings.Num(); i++)
 	{
-		Joints[i].RigidBodyA_Idx = JointSettings[i].RigidBodyA_Idx;
-		Joints[i].RigidBodyB_Idx = JointSettings[i].RigidBodyB_Idx;
+		Joints[i].RigidBodyA_Idx = JointSettings[i].RigidBodyA_Idx + 1; // フロアは固定で0なので+1
+		Joints[i].RigidBodyB_Idx = JointSettings[i].RigidBodyB_Idx + 1; // フロアは固定で0なので+1
 		Joints[i].Bias = JointSettings[i].Bias;
 		Joints[i].AnchorA = JointSettings[i].AnchorA;
 		Joints[i].AnchorB = JointSettings[i].AnchorB;
