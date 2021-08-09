@@ -602,6 +602,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		RigidBody.Restitution = Setting.Restitution;
 		RigidBody.Position = Setting.Location;
 		RigidBody.Orientation = Setting.Rotation.Quaternion();
+		RigidBody.LinearVelocity = Setting.LinearVelocity;
+		RigidBody.AngularVelocity = Setting.AngularVelocity;
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 

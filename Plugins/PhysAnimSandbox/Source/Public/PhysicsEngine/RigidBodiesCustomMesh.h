@@ -39,6 +39,12 @@ struct FRigidBodySetting
 	FRotator Rotation = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere)
+	FVector LinearVelocity = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere)
+	FVector AngularVelocity = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere)
 	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f);
 
 	UPROPERTY(EditAnywhere)
