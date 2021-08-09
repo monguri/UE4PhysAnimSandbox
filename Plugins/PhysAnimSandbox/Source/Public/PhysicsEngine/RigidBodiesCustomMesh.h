@@ -48,6 +48,27 @@ struct FRigidBodySetting
 	float Height = 10.0f; // for only capsule
 };
 
+USTRUCT()
+struct FJointSetting
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	int32 RigidBodyA_Idx = 0;
+
+	UPROPERTY(EditAnywhere)
+	int32 RigidBodyB_Idx = 1;
+
+	UPROPERTY(EditAnywhere)
+	float Bias = 0.1f;
+
+	UPROPERTY(EditAnywhere)
+	FVector AnchorA = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere)
+	FVector AnchorB = FVector::ZeroVector;
+};
+
 UCLASS()
 class ARigidBodiesCustomMesh : public AActor
 {
@@ -134,6 +155,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bDirectSet"))
 	TArray<FRigidBodySetting> RigidBodySettings;
+
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bDirectSet"))
+	TArray<FJointSetting> JointSettings;
 
 public:
 	struct FEdge
@@ -232,6 +256,18 @@ private:
 	};
 
 	TArray<FContactPair> ContactPairs;
+
+	struct FJoint
+	{
+		int32 RigidBodyA_Idx = 0;
+		int32 RigidBodyB_Idx = 1;
+		float Bias = 0.1f;
+		FVector AnchorA = FVector::ZeroVector;
+		FVector AnchorB = FVector::ZeroVector;
+		FConstraint Constraint;
+	};
+
+	TArray<FJoint> Joints;
 
 	struct FSolverBody
 	{

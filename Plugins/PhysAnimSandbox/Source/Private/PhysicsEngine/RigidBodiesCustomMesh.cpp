@@ -605,6 +605,16 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		// TODO:とりあえずその他の物理パラメータは初期値のまま
 	}
 
+	Joints.SetNum(JointSettings.Num());
+	for (int32 i = 0; i < JointSettings.Num(); i++)
+	{
+		Joints[i].RigidBodyA_Idx = JointSettings[i].RigidBodyA_Idx;
+		Joints[i].RigidBodyB_Idx = JointSettings[i].RigidBodyB_Idx;
+		Joints[i].Bias = JointSettings[i].Bias;
+		Joints[i].AnchorA = JointSettings[i].AnchorA;
+		Joints[i].AnchorB = JointSettings[i].AnchorB;
+	}
+
 	ContactPairs.SetNum(((NumRigidBodies + 1) * NumRigidBodies) / 2); //TODO: コンタクトペアは最大でも総当たりペア数。最終的には大きすぎるがとりあえずこれで。
 
 	int32 ContactPairIdx = 0;
@@ -949,12 +959,26 @@ void ARigidBodiesCustomMesh::DetectCollision()
 			float PenetrationDepth;
 			FVector ContactPointA;
 			FVector ContactPointB;
-			// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえず省略
-			bool bContacting = DetectConvexConvexContact(RigidBodyA, RigidBodyB, Normal, PenetrationDepth, ContactPointA, ContactPointB);
-			if (bContacting)
+
+			bool bJointExist = false;
+			for (const FJoint& Joint : Joints)
 			{
-				// コンタクトペア情報はキャッシュしてない。毎フレーム作り直している
-				ContactPairs[ContactPairIdx].AddContact(ContactPointA, ContactPointB, Normal, PenetrationDepth);
+				if ((Joint.RigidBodyA_Idx == i && Joint.RigidBodyB_Idx == j)
+					|| (Joint.RigidBodyA_Idx == j && Joint.RigidBodyB_Idx == i))
+				{
+					bJointExist = true;
+				}
+			}
+
+			// TODO:EasyPhysicsでは面数を見てAとBのどちらを座標系基準にするか決めてるがとりあえず省略
+			if (!bJointExist)
+			{
+				bool bContacting = DetectConvexConvexContact(RigidBodyA, RigidBodyB, Normal, PenetrationDepth, ContactPointA, ContactPointB);
+				if (bContacting)
+				{
+					// コンタクトペア情報はキャッシュしてない。毎フレーム作り直している
+					ContactPairs[ContactPairIdx].AddContact(ContactPointA, ContactPointB, Normal, PenetrationDepth);
+				}
 			}
 
 			ContactPairIdx++; 	
@@ -1016,7 +1040,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		const FRigidBody& RigidBody = RigidBodies[i];
 		FSolverBody& SolverBody = SolverBodies[i];
 
-		SolverBody.Orientation = RigidBody.Orientation;
+		SolverBody.Orientation = RigidBody.Orientation; // TODO:このコピーは必要ないな。RigidBody.Orientationを直に使えば十分だ
 		SolverBody.DeltaLinearVelocity = FVector::ZeroVector;
 		SolverBody.DeltaAngularVelocity = FVector::ZeroVector;
 
@@ -1033,6 +1057,52 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 			const FMatrix& OrientationMat = FTransform(SolverBody.Orientation).ToMatrixNoScale();
 			SolverBody.InertiaInv = OrientationMat * RigidBody.Inertia.Inverse() * OrientationMat.GetTransposed();
 		}
+	}
+
+	// ジョイントコンストレイントのセットアップ
+	for (FJoint& Joint : Joints)
+	{
+		const FRigidBody& RigidBodyA = RigidBodies[Joint.RigidBodyA_Idx];
+		const FRigidBody& RigidBodyB = RigidBodies[Joint.RigidBodyB_Idx];
+		FSolverBody& SolverBodyA = SolverBodies[Joint.RigidBodyA_Idx];
+		FSolverBody& SolverBodyB = SolverBodies[Joint.RigidBodyB_Idx];
+
+		const FVector& RotatedPointA = SolverBodyA.Orientation * Joint.AnchorA;
+		const FVector& RotatedPointB = SolverBodyB.Orientation * Joint.AnchorB;
+
+		const FVector& PositionA = RigidBodyA.Position + RotatedPointA;
+		const FVector& PositionB = RigidBodyB.Position + RotatedPointB;
+
+		FVector Direction = FVector::ZeroVector;
+		float Distance = 0.0f;
+		(PositionA - PositionB).ToDirectionAndLength(Direction, Distance);
+
+		if (Distance < SMALL_NUMBER)
+		{
+			// インパルスが発生しないようにする
+			Joint.Constraint.Axis = FVector(1.0f, 0.0f, 0.0f);
+			Joint.Constraint.JacobianDiagInv = 0.0f;
+			Joint.Constraint.RHS = 0.0f;
+			Joint.Constraint.LowerLimit = -FLT_MAX;
+			Joint.Constraint.UpperLimit = FLT_MAX;
+			continue;
+		}
+
+		const FMatrix& K = FMatrix::Identity * (SolverBodyA.MassInv + SolverBodyB.MassInv) + (CrossMatrix(RotatedPointA) * SolverBodyA.InertiaInv * CrossMatrix(RotatedPointA) * -1) + (CrossMatrix(RotatedPointB) * SolverBodyB.InertiaInv * CrossMatrix(RotatedPointB) * -1);
+
+		const FVector& VelocityA = RigidBodyA.LinearVelocity + FVector::CrossProduct(RigidBodyA.AngularVelocity, RotatedPointA); // TODO:角速度による速度ってrxwじゃなかったっけ？
+		const FVector& VelocityB = RigidBodyB.LinearVelocity + FVector::CrossProduct(RigidBodyB.AngularVelocity, RotatedPointB);
+		const FVector& RelativeVelocity = VelocityA - VelocityB;
+
+		Joint.Constraint.Axis = Direction;
+		const FVector& KdotAxis = K.TransformVector(Direction);
+		Joint.Constraint.JacobianDiagInv = 1.0f / FVector::DotProduct(KdotAxis, Direction);
+		Joint.Constraint.RHS = -FVector::DotProduct(RelativeVelocity, Direction); // velocity error
+		Joint.Constraint.RHS -= Joint.Bias * Distance / DeltaSeconds; // position error
+		Joint.Constraint.RHS *= Joint.Constraint.JacobianDiagInv;
+		Joint.Constraint.LowerLimit = -FLT_MAX;
+		Joint.Constraint.UpperLimit = FLT_MAX;
+		Joint.Constraint.AccumImpulse = 0.0f;
 	}
 
 	// コリジョンコンストレイントのセットアップ
@@ -1139,7 +1209,7 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		}
 	}
 
-	// ウォームスタート
+	// コリジョンコンストレイントのウォームスタート
 	for (FContactPair& ContactPair : ContactPairs)
 	{
 		FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
@@ -1166,6 +1236,30 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	// コンストレイントの反復演算
 	for (int32 Itr = 0; Itr < NumIterations; Itr++)
 	{
+		for (FJoint& Joint : Joints)
+		{
+			FSolverBody& SolverBodyA = SolverBodies[Joint.RigidBodyA_Idx];
+			FSolverBody& SolverBodyB = SolverBodies[Joint.RigidBodyB_Idx];
+			
+			const FVector& RotatedPointA = SolverBodyA.Orientation * Joint.AnchorA;
+			const FVector& RotatedPointB = SolverBodyB.Orientation * Joint.AnchorB;
+
+			FConstraint& Constraint = Joint.Constraint;
+			float DeltaImpulse = Constraint.RHS;
+			const FVector& DeltaVelocityA = SolverBodyA.DeltaLinearVelocity + FVector::CrossProduct(SolverBodyA.DeltaAngularVelocity, RotatedPointA);
+			const FVector& DeltaVelocityB = SolverBodyB.DeltaLinearVelocity + FVector::CrossProduct(SolverBodyB.DeltaAngularVelocity, RotatedPointB);
+			DeltaImpulse -= Constraint.JacobianDiagInv * FVector::DotProduct(Constraint.Axis, (DeltaVelocityA - DeltaVelocityB));
+
+			float OldImpulse = Constraint.AccumImpulse;
+			Constraint.AccumImpulse = FMath::Clamp(OldImpulse + DeltaImpulse, Constraint.LowerLimit, Constraint.UpperLimit);
+			DeltaImpulse = Constraint.AccumImpulse - OldImpulse;
+
+			SolverBodyA.DeltaLinearVelocity += DeltaImpulse * SolverBodyA.MassInv * Constraint.Axis;
+			SolverBodyA.DeltaAngularVelocity += DeltaImpulse * FVector(SolverBodyA.InertiaInv.TransformVector(FVector::CrossProduct(RotatedPointA, Constraint.Axis)));
+			SolverBodyB.DeltaLinearVelocity -= DeltaImpulse * SolverBodyB.MassInv * Constraint.Axis;
+			SolverBodyB.DeltaAngularVelocity -= DeltaImpulse * FVector(SolverBodyB.InertiaInv.TransformVector(FVector::CrossProduct(RotatedPointB, Constraint.Axis)));
+		}
+
 		for (FContactPair& ContactPair : ContactPairs)
 		{
 			FSolverBody& SolverBodyA = SolverBodies[ContactPair.RigidBodyA_Idx];
