@@ -581,6 +581,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	// RigidBodiesは0番目はフロアに。1番目以降がキューブ。
 	FRigidBody& FloorRigidBody = RigidBodies[0];
 	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, FloorRigidBody.CollisionShape);
+	FloorRigidBody.MotionType = ERigdBodyMotionType::Static;
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Friction = FloorFriction;
@@ -596,6 +597,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		FRigidBody& RigidBody = RigidBodies[i];
 		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, RigidBody.CollisionShape);
 
+		RigidBody.MotionType = Setting.MotionType;
 		RigidBody.Mass = Setting.Mass;
 		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height);
 		RigidBody.Friction = Setting.Friction;
@@ -1046,18 +1048,23 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 		SolverBody.DeltaLinearVelocity = FVector::ZeroVector;
 		SolverBody.DeltaAngularVelocity = FVector::ZeroVector;
 
-		if (i == 0)
+		switch (RigidBody.MotionType)
 		{
-			// フロアはStatic扱い
+		case ERigdBodyMotionType::Active:
+			{
+				SolverBody.MassInv = 1.0f / RigidBody.Mass;
+				//SolverBody.InertiaInv = (SolverBody.Orientation.Inverse() * RigidBody.Inertia).InverseFast(); // TODO:これは間違い。原因を調べよう。乗算が逆扱いになる？
+				const FMatrix& OrientationMat = FTransform(SolverBody.Orientation).ToMatrixNoScale();
+				SolverBody.InertiaInv = OrientationMat * RigidBody.Inertia.Inverse() * OrientationMat.GetTransposed();
+			}
+			break;
+		case ERigdBodyMotionType::Static:
 			SolverBody.MassInv = 0.0f;
 			SolverBody.InertiaInv *= 0.0f; // 手軽に0行列にできるコンストラクタがないので乗算で0行列にする
-		}
-		else
-		{
-			SolverBody.MassInv = 1.0f / RigidBody.Mass;
-			//SolverBody.InertiaInv = (SolverBody.Orientation.Inverse() * RigidBody.Inertia).InverseFast(); // TODO:これは間違い。原因を調べよう。乗算が逆扱いになる？
-			const FMatrix& OrientationMat = FTransform(SolverBody.Orientation).ToMatrixNoScale();
-			SolverBody.InertiaInv = OrientationMat * RigidBody.Inertia.Inverse() * OrientationMat.GetTransposed();
+			break;
+		default:
+			check(false);
+			break;
 		}
 	}
 
@@ -1353,8 +1360,8 @@ void ARigidBodiesCustomMesh::SolveConstraint(float DeltaSeconds)
 	// 速度を更新
 	for (int32 i = 0; i < NumRigidBodies + 1; i++)
 	{
-		// TODO:フロアをStatic扱いするのをとりあえずスキップで行う
-		if (i == 0)
+		// StaticであればInvMassやInvInertiaTensorが0なのでDeltaLinearVelocityとDeltaAngularVelocityも0だが一応。
+		if (RigidBodies[i].MotionType == ERigdBodyMotionType::Static)
 		{
 			continue;
 		}
@@ -1372,8 +1379,7 @@ void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 {
 	SCOPE_CYCLE_COUNTER(STAT_RigidBody_Integrate);
 
-	// TODO:フロアをStatic扱いするのをとりあえずIntegrateのスキップで行う
-	if (RBIdx == 0)
+	if (RigidBodies[RBIdx].MotionType == ERigdBodyMotionType::Static)
 	{
 		return;
 	}

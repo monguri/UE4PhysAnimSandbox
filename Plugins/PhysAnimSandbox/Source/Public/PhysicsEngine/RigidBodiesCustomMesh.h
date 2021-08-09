@@ -6,6 +6,13 @@
 #include "RigidBodiesCustomMesh.generated.h"
 
 UENUM()
+enum class ERigdBodyMotionType : uint8
+{
+	Active,
+	Static,
+};
+
+UENUM()
 enum class ERigdBodyGeometry : uint8
 {
 	Box,
@@ -19,6 +26,9 @@ USTRUCT()
 struct FRigidBodySetting
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	ERigdBodyMotionType MotionType = ERigdBodyMotionType::Active;
 
 	UPROPERTY(EditAnywhere)
 	ERigdBodyGeometry Geometry = ERigdBodyGeometry::Box;
@@ -190,6 +200,7 @@ public:
 	{
 		FCollisionShape CollisionShape;
 
+		ERigdBodyMotionType MotionType = ERigdBodyMotionType::Active;
 		float Mass = 1.0f;
 		float Friction = 0.2f;
 		float Restitution = 0.6f;
