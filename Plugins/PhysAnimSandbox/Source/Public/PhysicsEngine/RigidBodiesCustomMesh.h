@@ -176,6 +176,10 @@ private:
 	TArray<FJointSetting> JointSettings;
 
 public:
+	UFUNCTION(BlueprintCallable)
+	void FireAmmo(const FVector2D& ViewportPos);
+
+public:
 	struct FEdge
 	{
 		int32 VertId[2] = {-1, -1};

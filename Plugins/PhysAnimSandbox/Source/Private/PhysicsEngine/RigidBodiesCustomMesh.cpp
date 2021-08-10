@@ -1631,3 +1631,8 @@ int32 ARigidBodiesCustomMesh::FContactPair::ChooseSwapContact(const FVector& New
 	return MaxIndex;
 }
 
+void ARigidBodiesCustomMesh::FireAmmo(const FVector2D& ViewportPos)
+{
+	UE_LOG(LogTemp, Log, TEXT("ViewportPos=(%f, %f)"), ViewportPos.X, ViewportPos.Y);
+}
+
