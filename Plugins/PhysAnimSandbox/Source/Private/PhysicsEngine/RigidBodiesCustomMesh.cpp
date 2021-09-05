@@ -580,11 +580,11 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	// RigidBodiesは0番目は弾で1番目はフロアに。2番目以降が各剛体。
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FVector(50.0f), 0.0f, AmmoRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FVector(25.0f), 0.0f, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
 	AmmoRigidBody.Mass = 0.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
 	AmmoRigidBody.Inertia = FMatrix::Identity; // 弾はStaticなので無限質量扱いにしてるので使っていない
-	AmmoRigidBody.Position = FVector(1000.0f, 1000.0f, 1000.0f);
+	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
 	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, FloorRigidBody.CollisionShape);
