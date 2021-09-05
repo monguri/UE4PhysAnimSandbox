@@ -1394,6 +1394,10 @@ void ARigidBodiesCustomMesh::Integrate(int32 RBIdx, float DeltaSeconds)
 	RigidBodies[RBIdx].LinearVelocity += FVector(0.0f, 0.0f, Gravity) * DeltaSeconds;
 	RigidBodies[RBIdx].Position += RigidBodies[RBIdx].LinearVelocity * DeltaSeconds;
 
+	// 速度と位置が発散しないように適当な値でクランプ
+	RigidBodies[RBIdx].LinearVelocity = RigidBodies[RBIdx].LinearVelocity.BoundToCube(100000);
+	RigidBodies[RBIdx].Position = RigidBodies[RBIdx].Position.BoundToCube(100000);
+
 	const FQuat& OrientationDifferential = FQuat(RigidBodies[RBIdx].AngularVelocity.X, RigidBodies[RBIdx].AngularVelocity.Y, RigidBodies[RBIdx].AngularVelocity.Z, 0.0f) * RigidBodies[RBIdx].Orientation * 0.5f;
 	RigidBodies[RBIdx].Orientation = (RigidBodies[RBIdx].Orientation + OrientationDifferential * DeltaSeconds).GetNormalized();
 }
