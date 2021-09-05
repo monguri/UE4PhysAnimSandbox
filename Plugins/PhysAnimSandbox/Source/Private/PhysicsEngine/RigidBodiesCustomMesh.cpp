@@ -582,8 +582,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
 	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FVector(25.0f), 0.0f, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
-	AmmoRigidBody.Mass = 0.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
-	AmmoRigidBody.Inertia = FMatrix::Identity; // 弾はStaticなので無限質量扱いにしてるので使っていない
+	AmmoRigidBody.Mass = 1.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
+	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Box, AmmoRigidBody.Mass, 0.01f, FVector(25.0f), 50.0f);
 	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
@@ -606,7 +606,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 		RigidBody.MotionType = Setting.MotionType;
 		RigidBody.Mass = Setting.Mass;
-		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height);
+		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height) * Setting.InertiaScale;
 		RigidBody.Friction = Setting.Friction;
 		RigidBody.Restitution = Setting.Restitution;
 		RigidBody.Position = Setting.Location;
@@ -1635,8 +1635,16 @@ int32 ARigidBodiesCustomMesh::FContactPair::ChooseSwapContact(const FVector& New
 	return MaxIndex;
 }
 
-void ARigidBodiesCustomMesh::FireAmmo(const FVector2D& ViewportPos)
+void ARigidBodiesCustomMesh::FireAmmo(const FVector& RayStartWSPos, const FVector& RayWSDir)
 {
-	UE_LOG(LogTemp, Log, TEXT("ViewportPos=(%f, %f)"), ViewportPos.X, ViewportPos.Y);
+	// この関数が呼ばれるたびに位置や速度を初期化する
+
+	FRigidBody& AmmoRigidBody = RigidBodies[0];
+	// 初期値のStaticからActiveに変更
+	AmmoRigidBody.MotionType = ERigdBodyMotionType::Active;
+	AmmoRigidBody.Position = RayStartWSPos;
+	AmmoRigidBody.Orientation = FQuat::Identity;
+	AmmoRigidBody.LinearVelocity = RayWSDir * 5000.0f; // 速度は50m/s=180km/hに固定
+	AmmoRigidBody.AngularVelocity = FVector::ZeroVector;
 }
 

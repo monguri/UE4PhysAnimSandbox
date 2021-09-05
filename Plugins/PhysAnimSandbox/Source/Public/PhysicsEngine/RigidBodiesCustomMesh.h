@@ -43,6 +43,9 @@ struct FRigidBodySetting
 	float Mass = 1.0f;
 
 	UPROPERTY(EditAnywhere)
+	float InertiaScale = 1.0f;
+
+	UPROPERTY(EditAnywhere)
 	FVector Location = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere)
@@ -177,7 +180,7 @@ private:
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void FireAmmo(const FVector2D& ViewportPos);
+	void FireAmmo(const FVector& RayStartWSPos, const FVector& RayWSDir);
 
 public:
 	struct FEdge
