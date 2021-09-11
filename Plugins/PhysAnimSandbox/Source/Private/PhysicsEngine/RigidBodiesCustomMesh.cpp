@@ -2,6 +2,8 @@
 #include "UObject/ConstructorHelpers.h"
 #include "CustomMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/StaticMesh.h"
+#include "StaticMeshResources.h"
 
 ARigidBodiesCustomMesh::ARigidBodiesCustomMesh()
 {
@@ -96,8 +98,17 @@ namespace
 		return Ret;
 	}
 
-	 void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
-	 {
+	void CreateStaticMeshVerticesIndices(UStaticMesh* StaticMesh, TArray<FVector>& Vertices, TArray<FIntVector>& Indices)
+	{
+		// TODO:とりあえずチェック
+		check(StaticMesh != nullptr);
+
+		const FStaticMeshLODResources& LOD0Resource = StaticMesh->GetLODForExport(0);
+		const FPositionVertexBuffer& PosVB = LOD0Resource.VertexBuffers.PositionVertexBuffer;
+	}
+
+	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	{
 		// HalfExtentやRadiusが1なのは、ScaleをHalfExtentとして計算している場所があるので必須
 		static const TArray<FVector> BoxVertices = 
 		{
@@ -443,6 +454,9 @@ namespace
 			CollisionShape.Vertices = TetrahedronVertices;
 			Indices = TetrahedronIndices;
 			break;
+		case ERigdBodyGeometry::StaticMesh:
+			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices);
+			break;
 		default:
 			check(false);
 			break;
@@ -466,7 +480,7 @@ namespace
 		{
 			Vertex *= Scale;
 		}
- 
+
 		// カプセルの場合はスケールだけでなくHeightの影響もプラス
 		if (Geometry == ERigdBodyGeometry::Capsule)
 		{
@@ -580,14 +594,14 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	// RigidBodiesは0番目は弾で1番目はフロアに。2番目以降が各剛体。
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, AmmoRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
 	AmmoRigidBody.Mass = 1.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
 	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Ellipsoid, AmmoRigidBody.Mass, 0.01f, FVector(50.0f), 50.0f);
 	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, FloorRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, nullptr, FloorRigidBody.CollisionShape);
 	FloorRigidBody.MotionType = ERigdBodyMotionType::Static;
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
@@ -602,7 +616,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 2];
 
 		FRigidBody& RigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, RigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, RigidBody.CollisionShape);
 
 		RigidBody.MotionType = Setting.MotionType;
 		RigidBody.Mass = Setting.Mass;

@@ -20,6 +20,7 @@ enum class ERigdBodyGeometry : uint8
 	Capsule,
 	Cylinder,
 	Tetrahedron,
+	StaticMesh,
 };
 
 USTRUCT()
@@ -32,6 +33,9 @@ struct FRigidBodySetting
 
 	UPROPERTY(EditAnywhere)
 	ERigdBodyGeometry Geometry = ERigdBodyGeometry::Box;
+
+	UPROPERTY(EditAnywhere)
+	class UStaticMesh* StaticMesh = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	float Friction = 0.6f;
