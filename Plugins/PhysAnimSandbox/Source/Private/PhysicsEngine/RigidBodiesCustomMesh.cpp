@@ -153,6 +153,10 @@ namespace
 
 		// TODO:VBとIBも頂点重複のないデータにして返す必要がある。エッジが、保持するFacetIDをもたねばならないため
 		// 重複してるようだと持ちようがないのだ
+
+
+		// Indicesのインデックス整理には、上のような削除はしない逆順ループを設け、
+		// 同じFVectorでもっとも小さいインデックスで上書きすればいい
 	}
 
 	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
