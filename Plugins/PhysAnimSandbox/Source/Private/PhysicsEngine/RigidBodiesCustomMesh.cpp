@@ -47,6 +47,9 @@ namespace
 			return PI * HalfExtent.X * HalfExtent.Y * Extent.Z * Density;
 		case ERigdBodyGeometry::Tetrahedron:
 			return HalfExtent.X * HalfExtent.Y * HalfExtent.Z / 6.0f * Density;
+		case ERigdBodyGeometry::StaticMesh:
+			// TODO:仮でBoxのものを使う
+			return Extent.X * Extent.Y * Extent.Z * Density;
 		default:
 			check(false);
 			return 1.0f;
@@ -90,6 +93,12 @@ namespace
 			Ret.M[2][0] = Ret.M[0][2] = Mass * (HalfExtent.Z * HalfExtent.X) / 80.0f;
 		}
 			break;
+		case ERigdBodyGeometry::StaticMesh:
+			// TODO:仮でBoxのものを使う
+			Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
+			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
+			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+			break;
 		default:
 			check(false);
 			break;
@@ -98,13 +107,52 @@ namespace
 		return Ret;
 	}
 
-	void CreateStaticMeshVerticesIndices(UStaticMesh* StaticMesh, TArray<FVector>& Vertices, TArray<FIntVector>& Indices)
+	void CreateStaticMeshVerticesIndices(UStaticMesh* StaticMesh, TArray<FVector>& Vertices, TArray<FIntVector>& Indices, int32& NumUniqueVertices)
 	{
 		// TODO:とりあえずチェック
 		check(StaticMesh != nullptr);
 
 		const FStaticMeshLODResources& LOD0Resource = StaticMesh->GetLODForExport(0);
 		const FPositionVertexBuffer& PosVB = LOD0Resource.VertexBuffers.PositionVertexBuffer;
+		const FRawStaticIndexBuffer& IB = LOD0Resource.IndexBuffer;
+
+		Vertices.SetNum(PosVB.GetNumVertices());
+
+		for (uint32 i = 0; i < PosVB.GetNumVertices(); i++)
+		{
+			Vertices[i] = PosVB.VertexPosition(i);
+		}
+
+		TArray<uint32> IBCopy;
+		IB.GetCopy(IBCopy);
+		Indices.SetNum(IBCopy.Num() / 3);
+
+		for (int32 i = 0; i < Indices.Num(); i++)
+		{
+			Indices[i] = FIntVector(IBCopy[3 * i], IBCopy[3 * i + 1], IBCopy[3 * i + 2]);
+		}
+
+		TArray<FVector> UniqueVertices = Vertices;
+
+		// TArray::RemoveAll()を使うやり方もある
+		NumUniqueVertices = 0;
+		for (int32 i = 0; i < UniqueVertices.Num(); i++)
+		{
+			for (int32 j = i + 1; j < UniqueVertices.Num(); j++)
+			{
+				if (UniqueVertices[i].Equals(UniqueVertices[j]))
+				{
+					UniqueVertices.RemoveAt(j);
+					// shrinkした分、次のインクリメントで今のjからチェックをはじめたいので一個戻す
+					j--;
+				}
+			}
+		}
+
+		NumUniqueVertices = UniqueVertices.Num();
+
+		// TODO:VBとIBも頂点重複のないデータにして返す必要がある。エッジが、保持するFacetIDをもたねばならないため
+		// 重複してるようだと持ちようがないのだ
 	}
 
 	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
@@ -431,38 +479,44 @@ namespace
 
 
 		TArray<FIntVector> Indices;
+		int32 NumUniqueVertices = 0;
 
 		switch (Geometry)
 		{
 		case ERigdBodyGeometry::Box:
 			CollisionShape.Vertices = BoxVertices;
 			Indices = BoxIndices;
+			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Ellipsoid:
 			CollisionShape.Vertices = EllipsoidVertices;
 			Indices = EllipsoidIndices;
+			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Capsule:
 			CollisionShape.Vertices = CapsuleVertices;
 			Indices = CapsuleIndices;
+			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Cylinder:
 			CollisionShape.Vertices = CylinderVertices;
 			Indices = CylinderIndices;
+			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 			CollisionShape.Vertices = TetrahedronVertices;
 			Indices = TetrahedronIndices;
+			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::StaticMesh:
-			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices);
+			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices, NumUniqueVertices);
 			break;
 		default:
 			check(false);
 			break;
 		}
 
-		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Edges.SetNum(NumUniqueVertices + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
 		CollisionShape.Facets.SetNum(Indices.Num());
 
 		// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
@@ -507,9 +561,9 @@ namespace
 		}
 
 		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
-		check(CollisionShape.Vertices.Num() < 255);
+		check(NumUniqueVertices < 255);
 		TArray<uint8> EdgeIdTable; // とりあえずuint8なので255エッジまで。FFは識別値に使う
-		EdgeIdTable.SetNum(CollisionShape.Vertices.Num() * (CollisionShape.Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
+		EdgeIdTable.SetNum(NumUniqueVertices * (NumUniqueVertices - 1) / 2); // n(n-1)/2 n = 8
 		for (uint8& EdgeId : EdgeIdTable)
 		{
 			EdgeId = 0xff;
