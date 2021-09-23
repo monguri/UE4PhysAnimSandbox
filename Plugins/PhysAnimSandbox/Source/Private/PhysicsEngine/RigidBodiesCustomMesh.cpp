@@ -107,8 +107,13 @@ namespace
 		return Ret;
 	}
 
-	void CreateStaticMeshVerticesIndices(UStaticMesh* StaticMesh, TArray<FVector>& Vertices, TArray<FIntVector>& Indices, int32& NumUniqueVertices)
+	void CreateStaticMeshVerticesIndices(UStaticMesh* StaticMesh, TArray<FVector>& Vertices, TArray<FIntVector>& Indices)
 	{
+		// StaticMeshのFPositionVertexBufferは各頂点が配列の中に何度も重複して現れうる。
+		// IndexBufferもそれに対応したものになっている。
+		// コリジョンシェイプ化する前に重複のない配列にしなければならない。
+		// エッジが、保持するFacetIDをもたねばならないため重複してるようだと持ちようがないのだ
+
 		// TODO:とりあえずチェック
 		check(StaticMesh != nullptr);
 
@@ -132,31 +137,37 @@ namespace
 			Indices[i] = FIntVector(IBCopy[3 * i], IBCopy[3 * i + 1], IBCopy[3 * i + 2]);
 		}
 
-		TArray<FVector> UniqueVertices = Vertices;
-
-		// TArray::RemoveAll()を使うやり方もある
-		NumUniqueVertices = 0;
-		for (int32 i = 0; i < UniqueVertices.Num(); i++)
+		// 逆順ループ。ユニークな値の中でもっともインデックス値が小さいものを残していく
+		for (int32 i = Vertices.Num() - 1; i >= 0; i--)
 		{
-			for (int32 j = i + 1; j < UniqueVertices.Num(); j++)
+			for (int32 j = i - 1; j >= 0; j--)
 			{
-				if (UniqueVertices[i].Equals(UniqueVertices[j]))
+				if (Vertices[i].Equals(Vertices[j]))
 				{
-					UniqueVertices.RemoveAt(j);
-					// shrinkした分、次のインクリメントで今のjからチェックをはじめたいので一個戻す
-					j--;
+					Vertices.RemoveAt(i);
+
+					for (int32 k = 0; k < Indices.Num(); k++)
+					{
+						if (Indices[k].X == i)
+						{
+							Indices[k].X = j;
+						}
+						
+						if (Indices[k].Y == i)
+						{
+							Indices[k].Y = j;
+						}
+						
+						if (Indices[k].Z == i)
+						{
+							Indices[k].Z = j;
+						}
+					}
+
+					break;
 				}
 			}
 		}
-
-		NumUniqueVertices = UniqueVertices.Num();
-
-		// TODO:VBとIBも頂点重複のないデータにして返す必要がある。エッジが、保持するFacetIDをもたねばならないため
-		// 重複してるようだと持ちようがないのだ
-
-
-		// Indicesのインデックス整理には、上のような削除はしない逆順ループを設け、
-		// 同じFVectorでもっとも小さいインデックスで上書きすればいい
 	}
 
 	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
@@ -483,44 +494,38 @@ namespace
 
 
 		TArray<FIntVector> Indices;
-		int32 NumUniqueVertices = 0;
 
 		switch (Geometry)
 		{
 		case ERigdBodyGeometry::Box:
 			CollisionShape.Vertices = BoxVertices;
 			Indices = BoxIndices;
-			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Ellipsoid:
 			CollisionShape.Vertices = EllipsoidVertices;
 			Indices = EllipsoidIndices;
-			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Capsule:
 			CollisionShape.Vertices = CapsuleVertices;
 			Indices = CapsuleIndices;
-			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Cylinder:
 			CollisionShape.Vertices = CylinderVertices;
 			Indices = CylinderIndices;
-			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
 			CollisionShape.Vertices = TetrahedronVertices;
 			Indices = TetrahedronIndices;
-			NumUniqueVertices = CollisionShape.Vertices.Num();
 			break;
 		case ERigdBodyGeometry::StaticMesh:
-			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices, NumUniqueVertices);
+			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices);
 			break;
 		default:
 			check(false);
 			break;
 		}
 
-		CollisionShape.Edges.SetNum(NumUniqueVertices + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
 		CollisionShape.Facets.SetNum(Indices.Num());
 
 		// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
@@ -565,9 +570,9 @@ namespace
 		}
 
 		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
-		check(NumUniqueVertices < 255);
+		check(CollisionShape.Vertices.Num() < 255);
 		TArray<uint8> EdgeIdTable; // とりあえずuint8なので255エッジまで。FFは識別値に使う
-		EdgeIdTable.SetNum(NumUniqueVertices * (NumUniqueVertices - 1) / 2); // n(n-1)/2 n = 8
+		EdgeIdTable.SetNum(CollisionShape.Vertices.Num() * (CollisionShape.Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
 		for (uint8& EdgeId : EdgeIdTable)
 		{
 			EdgeId = 0xff;
