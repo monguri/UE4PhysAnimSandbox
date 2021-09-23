@@ -569,13 +569,11 @@ namespace
 			Facet.VertId[2] = Indices[i].Z;
 		}
 
-		// 2頂点間に必ずエッジがあるわけではないので単純に8頂点の組み合わせ数ではない。エッジは18本である。組み合わせ数だけ多めにとっておく
-		check(CollisionShape.Vertices.Num() < 255);
-		TArray<uint8> EdgeIdTable; // とりあえずuint8なので255エッジまで。FFは識別値に使う
+		TArray<uint32> EdgeIdTable;
 		EdgeIdTable.SetNum(CollisionShape.Vertices.Num() * (CollisionShape.Vertices.Num() - 1) / 2); // n(n-1)/2 n = 8
-		for (uint8& EdgeId : EdgeIdTable)
+		for (uint32& EdgeId : EdgeIdTable)
 		{
-			EdgeId = 0xff;
+			EdgeId = 0xffffffff;
 		}
 
 		// NormalとEdgeId[3]の計算。EdgesとFacetsの作成。
@@ -595,7 +593,7 @@ namespace
 				int32 VertId0 = FMath::Min(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
 				int32 VertId1 = FMath::Max(Facet.VertId[TriVert % 3], Facet.VertId[(TriVert + 1) % 3]);
 				int32 TableId = VertId1 * (VertId1 - 1) / 2 + VertId0;
-				if (EdgeIdTable[TableId] == 0xff)
+				if (EdgeIdTable[TableId] == 0xffffffff)
 				{
 					// 初回登録
 					CollisionShape.Edges[EdgeIdx].VertId[0] = VertId0;
