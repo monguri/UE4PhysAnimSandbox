@@ -137,7 +137,9 @@ namespace
 			Indices[i] = FIntVector(IBCopy[3 * i], IBCopy[3 * i + 1], IBCopy[3 * i + 2]);
 		}
 
-		// 逆順ループ。ユニークな値の中でもっともインデックス値が小さいものを残していく
+		// 逆順ループ。ユニークな値の中でもっともインデックス値が小さいものを残していく。
+		// また、一個要素を削除したらインデックス値がそれより大きなものは-1する。
+		// TODO:こんなブルートフォースよりもっといいアルゴリズムはありそう。
 		for (int32 i = Vertices.Num() - 1; i >= 0; i--)
 		{
 			for (int32 j = i - 1; j >= 0; j--)
@@ -152,15 +154,27 @@ namespace
 						{
 							Indices[k].X = j;
 						}
+						else if (Indices[k].X > i)
+						{
+							Indices[k].X -= 1;
+						}
 						
 						if (Indices[k].Y == i)
 						{
 							Indices[k].Y = j;
 						}
+						else if (Indices[k].Y > i)
+						{
+							Indices[k].Y -= 1;
+						}
 						
 						if (Indices[k].Z == i)
 						{
 							Indices[k].Z = j;
+						}
+						else if (Indices[k].Z > i)
+						{
+							Indices[k].Z -= 1;
 						}
 					}
 
