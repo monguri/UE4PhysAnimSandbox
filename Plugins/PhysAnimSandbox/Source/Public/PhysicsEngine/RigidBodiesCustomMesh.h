@@ -38,6 +38,9 @@ struct FRigidBodySetting
 	class UStaticMesh* StaticMesh = nullptr;
 
 	UPROPERTY(EditAnywhere)
+	int32 NumHole = 0;
+
+	UPROPERTY(EditAnywhere)
 	float Friction = 0.6f;
 
 	UPROPERTY(EditAnywhere)

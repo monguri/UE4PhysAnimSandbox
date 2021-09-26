@@ -144,7 +144,7 @@ namespace
 		{
 			for (int32 j = i - 1; j >= 0; j--)
 			{
-				if (Vertices[i].Equals(Vertices[j]))
+				if (Vertices[i].Equals(Vertices[j], 1.e-1f)) // Toleranceは1mmに
 				{
 					Vertices.RemoveAt(i);
 
@@ -184,7 +184,7 @@ namespace
 		}
 	}
 
-	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, int32 NumHole, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	{
 		// HalfExtentやRadiusが1なのは、ScaleをHalfExtentとして計算している場所があるので必須
 		static const TArray<FVector> BoxVertices = 
@@ -539,7 +539,8 @@ namespace
 			break;
 		}
 
-		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2); // オイラーの多面体定理　v - e + f = 2
+		// オイラーの多面体定理　v - e + f + NumHole = 2. ここで、穴は貫通しているものでなく、面の埋まってない隙間という感じ
+		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2 + NumHole);
 		CollisionShape.Facets.SetNum(Indices.Num());
 
 		// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
@@ -669,14 +670,14 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	// RigidBodiesは0番目は弾で1番目はフロアに。2番目以降が各剛体。
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, AmmoRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, 0, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
 	AmmoRigidBody.Mass = 1.0f; // 弾はStaticなので無限質量扱いにしてるので使っていない
 	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Ellipsoid, AmmoRigidBody.Mass, 0.01f, FVector(50.0f), 50.0f);
 	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, nullptr, FloorRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, nullptr, 0, FloorRigidBody.CollisionShape);
 	FloorRigidBody.MotionType = ERigdBodyMotionType::Static;
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
@@ -691,7 +692,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 2];
 
 		FRigidBody& RigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, RigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, Setting.NumHole, RigidBody.CollisionShape);
 
 		RigidBody.MotionType = Setting.MotionType;
 		RigidBody.Mass = Setting.Mass;
