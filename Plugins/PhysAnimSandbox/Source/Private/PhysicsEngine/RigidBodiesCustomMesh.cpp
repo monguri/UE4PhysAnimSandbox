@@ -82,6 +82,26 @@ namespace
 		OutCenterOfMass = P0 + VolumeTimesPosSum / 4;
 	}
 
+	FMatrix CalculateConvexInertia(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, float Density, const FVector& CenterOfMass)
+	{
+		const FMatrix& CoefMat = FMatrix(FVector(2, 1, 1), FVector(1, 2, 1), FVector(1, 1, 2), FVector::ZeroVector);
+		FMatrix CovarianceSum = FMatrix(EForceInit::ForceInitToZero);
+
+		for (const FIntVector& TriIndices : Indices)
+		{
+			const FVector& P1 = Vertices[TriIndices.X];
+			const FVector& P2 = Vertices[TriIndices.Y];
+			const FVector& P3 = Vertices[TriIndices.Z];
+
+			const FMatrix& DeltaMatrix = FMatrix(P1 - CenterOfMass, P2 - CenterOfMass, P3 - CenterOfMass, FVector::ZeroVector);
+			float Determinant = DeltaMatrix.Determinant();
+			CovarianceSum += DeltaMatrix * (CoefMat * Determinant) * DeltaMatrix.GetTransposed();
+		}
+
+		float Trace = CovarianceSum.M[0][0] + CovarianceSum.M[1][1] + CovarianceSum.M[2][2];
+		return (FMatrix::Identity * Trace + CovarianceSum * -1) * (1.0f / 120) * Density;
+	}
+
 	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
