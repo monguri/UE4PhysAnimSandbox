@@ -55,6 +55,32 @@ namespace
 			return 1.0f;
 		}
 	}
+	
+	void CalculateConvexVolumeAndCenterOfMass(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, float& OutVolume, FVector& OutCenterOfMass)
+	{
+		float VolumeSum = 0.0f;
+		// 密度一定なら体積は質量に比例するので体積を座標に乗算して平均すれば重心になる
+		FVector VolumeTimesPosSum = FVector::ZeroVector;
+		// Convexを前提として、ある頂点をリファレンスポイントとする
+		FVector P0 = Vertices[Indices[0].X];
+
+		for (const FIntVector& TriIndices : Indices)
+		{
+			const FVector& P1 = Vertices[TriIndices.X];
+			const FVector& P2 = Vertices[TriIndices.Y];
+			const FVector& P3 = Vertices[TriIndices.Z];
+
+			// TODO:CalculateVolumeAndCenterOfMass()ではなぜ絶対値とらずに計算できてるのか？
+			// Tetrahedronの体積の6倍
+			float TetrahedronVolume = FMath::Abs(FVector::DotProduct((P1 - P0), FVector::CrossProduct(P2 - P0, P3 - P0)));
+			VolumeSum += TetrahedronVolume;
+			// 重心寄与項の4倍
+			VolumeTimesPosSum += TetrahedronVolume * ((P1 - P0) + (P2 - P0) + (P3 - P0));
+		}
+
+		OutVolume = VolumeSum / 6;
+		OutCenterOfMass = P0 + VolumeTimesPosSum / 4;
+	}
 
 	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height)
 	{
