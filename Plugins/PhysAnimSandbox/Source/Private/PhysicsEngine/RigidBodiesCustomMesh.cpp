@@ -699,7 +699,7 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
 			// TODO:bDirectSet=false‚Å‚Í‚Æ‚è‚ ‚¦‚¸Box
-			Setting.Mass = CalculateMass(Geometry, HalfExtent, Height, Density);
+			Setting.Mass = CalculateMass(Setting.Geometry, HalfExtent, Height, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = Rotation;
 			Setting.HalfExtent = HalfExtent;
