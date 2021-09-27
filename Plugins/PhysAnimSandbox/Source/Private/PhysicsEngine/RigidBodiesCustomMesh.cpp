@@ -75,11 +75,11 @@ namespace
 			float TetrahedronVolume = FMath::Abs(FVector::DotProduct((P1 - P0), FVector::CrossProduct(P2 - P0, P3 - P0)));
 			VolumeSum += TetrahedronVolume;
 			// èdêSäÒó^çÄÇÃ4î{
-			VolumeTimesPosSum += TetrahedronVolume * ((P1 - P0) + (P2 - P0) + (P3 - P0));
+			VolumeTimesPosSum += ((P1 - P0) + (P2 - P0) + (P3 - P0)) * TetrahedronVolume;
 		}
 
 		OutVolume = VolumeSum / 6;
-		OutCenterOfMass = P0 + VolumeTimesPosSum / 4;
+		OutCenterOfMass = P0 + VolumeTimesPosSum / (4 * VolumeSum);
 	}
 
 	FMatrix CalculateConvexInertia(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, float Density, const FVector& CenterOfMass)
