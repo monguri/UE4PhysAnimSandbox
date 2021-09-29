@@ -100,7 +100,10 @@ namespace
 		}
 
 		float Trace = CovarianceSum.M[0][0] + CovarianceSum.M[1][1] + CovarianceSum.M[2][2];
-		return (FMatrix::Identity * Trace + CovarianceSum * -1) * (1.0f / 120) * Density;
+		FMatrix Inertia = (FMatrix::Identity * Trace + CovarianceSum * -1) * (1.0f / 120) * Density;
+		// FMatrix‚Ì4s4—ñ–Ú‚Íg‚í‚È‚¢‚ª”ñ‘ÎŠp€‚Í0A‘ÎŠp€‚Í1‚É‚µ‚Ä‚¨‚­
+		Inertia.M[3][3] = 1.0f;
+		return Inertia;
 	}
 
 	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height)
