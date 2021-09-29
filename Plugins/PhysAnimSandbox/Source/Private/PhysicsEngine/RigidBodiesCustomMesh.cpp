@@ -94,8 +94,9 @@ namespace
 			const FVector& P3 = Vertices[TriIndices.Z];
 
 			const FMatrix& DeltaMatrix = FMatrix(P1 - CenterOfMass, P2 - CenterOfMass, P3 - CenterOfMass, FVector::ZeroVector);
-			float Determinant = DeltaMatrix.Determinant();
-			CovarianceSum += DeltaMatrix * (CoefMat * Determinant) * DeltaMatrix.GetTransposed();
+			// TODO:CalculateInertiaAndRotationOfMass()‚Å‚Í‚È‚ºâ‘Î’l‚Æ‚ç‚¸‚ÉŒvZ‚Å‚«‚Ä‚é‚Ì‚©H
+			float Determinant = FMath::Abs(DeltaMatrix.Determinant());
+			CovarianceSum += DeltaMatrix.GetTransposed() * (CoefMat * Determinant) * DeltaMatrix;
 		}
 
 		float Trace = CovarianceSum.M[0][0] + CovarianceSum.M[1][1] + CovarianceSum.M[2][2];
