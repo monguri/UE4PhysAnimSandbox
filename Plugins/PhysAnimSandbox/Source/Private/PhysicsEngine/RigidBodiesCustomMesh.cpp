@@ -32,7 +32,7 @@ namespace
 		return Point;
 	}
 
-	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Height, float Density)
+	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Height, float Density, const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
 		switch (Geometry)
@@ -106,7 +106,7 @@ namespace
 		return Inertia;
 	}
 
-	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height)
+	FMatrix CalculateInertia(ERigdBodyGeometry Geometry, float Mass, float Density, const FVector& HalfExtent, float Height, const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
 		FMatrix Ret = FMatrix::Identity;
@@ -702,11 +702,10 @@ void ARigidBodiesCustomMesh::BeginPlay()
 			}
 			Setting.Friction = Friction;
 			Setting.Restitution = Restitution;
-			// TODO:bDirectSet=false‚Å‚Í‚Æ‚è‚ ‚¦‚¸Box
-			Setting.Mass = CalculateMass(Setting.Geometry, HalfExtent, Height, Density);
 			Setting.Location = RandPointInSphereCustomMesh(BoxSphere, InitPosCenter);
 			Setting.Rotation = Rotation;
 			Setting.HalfExtent = HalfExtent;
+			Setting.bUseDensity = true; // bDirectSet=false‚Ì‚Æ‚«‚ÍDensity‚ÌUPROPERTY‚ðŽg‚¤
 			Setting.Density = Density;
 			Setting.Height = Height;
 			RigidBodySettings.Add(Setting);
@@ -722,8 +721,8 @@ void ARigidBodiesCustomMesh::BeginPlay()
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
 	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, 0, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
-	AmmoRigidBody.Mass = 1.0f; // ’e‚ÍStatic‚È‚Ì‚Å–³ŒÀŽ¿—Êˆµ‚¢‚É‚µ‚Ä‚é‚Ì‚ÅŽg‚Á‚Ä‚¢‚È‚¢
-	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Ellipsoid, AmmoRigidBody.Mass, 0.01f, FVector(50.0f), 50.0f);
+	AmmoRigidBody.Mass = 1.0f; // ’e‚ÍŒÅ’è‚Å1kgˆµ‚¢‚µ‚Ä‚¢‚é
+	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Ellipsoid, AmmoRigidBody.Mass, 0.01f, FVector(50.0f), 50.0f, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
@@ -745,8 +744,15 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, Setting.NumHole, RigidBody.CollisionShape);
 
 		RigidBody.MotionType = Setting.MotionType;
-		RigidBody.Mass = Setting.Mass;
-		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height) * Setting.InertiaScale;
+		if (Setting.bUseDensity || Setting.Geometry == ERigdBodyGeometry::Capsule || Setting.Geometry ==  ERigdBodyGeometry::StaticMesh)
+		{
+			RigidBody.Mass = CalculateMass(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.Density, RigidBody.CollisionShape);
+		}
+		else
+		{
+			RigidBody.Mass = Setting.Mass;
+		}
+		RigidBody.Inertia = CalculateInertia(Setting.Geometry, RigidBody.Mass, Setting.Density, Setting.HalfExtent, Setting.Height, RigidBody.CollisionShape) * Setting.InertiaScale;
 		RigidBody.Friction = Setting.Friction;
 		RigidBody.Restitution = Setting.Restitution;
 		RigidBody.Position = Setting.Location;

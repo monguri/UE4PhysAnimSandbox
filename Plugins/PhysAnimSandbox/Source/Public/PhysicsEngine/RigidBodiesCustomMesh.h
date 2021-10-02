@@ -47,6 +47,12 @@ struct FRigidBodySetting
 	float Restitution = 0.2f;
 
 	UPROPERTY(EditAnywhere)
+	bool bUseDensity = false;
+
+	UPROPERTY(EditAnywhere)
+	float Density = 0.1f;
+
+	UPROPERTY(EditAnywhere)
 	float Mass = 1.0f;
 
 	UPROPERTY(EditAnywhere)
@@ -66,9 +72,6 @@ struct FRigidBodySetting
 
 	UPROPERTY(EditAnywhere)
 	FVector HalfExtent = FVector(10.0f, 10.0f, 10.0f);
-
-	UPROPERTY(EditAnywhere)
-	float Density = 0.1f; // for only capsule
 
 	UPROPERTY(EditAnywhere)
 	float Height = 10.0f; // for only capsule
