@@ -32,7 +32,7 @@ namespace
 		return Point;
 	}
 
-	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Height, float Density, const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	float CalculateMass(ERigdBodyGeometry Geometry, const FVector& HalfExtent, float Height, float Density, const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape, float Volume)
 	{
 		const FVector& Extent = HalfExtent * 2.0f;
 		switch (Geometry)
@@ -48,8 +48,7 @@ namespace
 		case ERigdBodyGeometry::Tetrahedron:
 			return HalfExtent.X * HalfExtent.Y * HalfExtent.Z / 6.0f * Density;
 		case ERigdBodyGeometry::StaticMesh:
-			// TODO:仮でBoxのものを使う
-			return Extent.X * Extent.Y * Extent.Z * Density;
+			return Density * Volume;
 		default:
 			check(false);
 			return 1.0f;
@@ -82,16 +81,16 @@ namespace
 		OutCenterOfMass = P0 + VolumeTimesPosSum / (4 * VolumeSum);
 	}
 
-	FMatrix CalculateConvexInertia(const TArray<FVector>& Vertices, const TArray<FIntVector>& Indices, float Density, const FVector& CenterOfMass)
+	FMatrix CalculateConvexInertia(const ARigidBodiesCustomMesh::FCollisionShape& CollisionShape, float Density, const FVector& CenterOfMass)
 	{
 		const FMatrix& CoefMat = FMatrix(FVector(2, 1, 1), FVector(1, 2, 1), FVector(1, 1, 2), FVector::ZeroVector);
 		FMatrix CovarianceSum = FMatrix(EForceInit::ForceInitToZero);
-
-		for (const FIntVector& TriIndices : Indices)
+	
+		for (const ARigidBodiesCustomMesh::FFacet& Facet : CollisionShape.Facets)
 		{
-			const FVector& P1 = Vertices[TriIndices.X];
-			const FVector& P2 = Vertices[TriIndices.Y];
-			const FVector& P3 = Vertices[TriIndices.Z];
+			const FVector& P1 = CollisionShape.Vertices[Facet.VertId[0]];
+			const FVector& P2 = CollisionShape.Vertices[Facet.VertId[1]];
+			const FVector& P3 = CollisionShape.Vertices[Facet.VertId[2]];
 
 			const FMatrix& DeltaMatrix = FMatrix(P1 - CenterOfMass, P2 - CenterOfMass, P3 - CenterOfMass, FVector::ZeroVector);
 			// TODO:CalculateInertiaAndRotationOfMass()ではなぜ絶対値とらずに計算できてるのか？
@@ -144,10 +143,8 @@ namespace
 		}
 			break;
 		case ERigdBodyGeometry::StaticMesh:
-			// TODO:仮でBoxのものを使う
-			Ret.M[0][0] = Mass * (Extent.Y * Extent.Y + Extent.Z * Extent.Z) / 12.0f;
-			Ret.M[1][1] = Mass * (Extent.Z * Extent.Z + Extent.X * Extent.X) / 12.0f;
-			Ret.M[2][2] = Mass * (Extent.X * Extent.X + Extent.Y * Extent.Y) / 12.0f;
+			// Convexにのみ対応
+			CalculateConvexInertia(CollisionShape, Density, FVector::ZeroVector); // FCollisionShapeにした時点で重心が頂点バッファの原点になるようにしている
 			break;
 		default:
 			check(false);
@@ -234,7 +231,7 @@ namespace
 		}
 	}
 
-	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, int32 NumHole, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape)
+	void CreateConvexCollisionShape(ERigdBodyGeometry Geometry, const FVector& Scale, float Height, UStaticMesh* StaticMesh, int32 NumHole, ARigidBodiesCustomMesh::FCollisionShape& CollisionShape, float& Volume)
 	{
 		// HalfExtentやRadiusが1なのは、ScaleをHalfExtentとして計算している場所があるので必須
 		static const TArray<FVector> BoxVertices = 
@@ -559,6 +556,8 @@ namespace
 
 		TArray<FIntVector> Indices;
 
+		FVector CoM;
+
 		switch (Geometry)
 		{
 		case ERigdBodyGeometry::Box:
@@ -578,11 +577,27 @@ namespace
 			Indices = CylinderIndices;
 			break;
 		case ERigdBodyGeometry::Tetrahedron:
+		{
 			CollisionShape.Vertices = TetrahedronVertices;
 			Indices = TetrahedronIndices;
+
+			// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
+			CoM = FVector(0.25f);
+			for (FVector& Vertex : CollisionShape.Vertices)
+			{
+				Vertex -= CoM;
+			}
+		}
 			break;
 		case ERigdBodyGeometry::StaticMesh:
 			CreateStaticMeshVerticesIndices(StaticMesh, CollisionShape.Vertices, Indices);
+			// StaticMeshのときのみVolumeとCoMを計算する
+			CalculateConvexVolumeAndCenterOfMass(CollisionShape.Vertices, Indices, Volume, CoM);
+			// 重心座標がローカル座標の原点になるようにここで調整する
+			for (FVector& Vertex : CollisionShape.Vertices)
+			{
+				Vertex -= CoM;
+			}
 			break;
 		default:
 			check(false);
@@ -592,17 +607,6 @@ namespace
 		// オイラーの多面体定理　v - e + f + NumHole = 2. ここで、穴は貫通しているものでなく、面の埋まってない隙間という感じ
 		CollisionShape.Edges.SetNum(CollisionShape.Vertices.Num() + Indices.Num() - 2 + NumHole);
 		CollisionShape.Facets.SetNum(Indices.Num());
-
-		// 四面体の場合は重心座標がローカル座標の原点になるようにここで調整する
-		if (Geometry == ERigdBodyGeometry::Tetrahedron)
-		{
-			const FVector& CoM = FVector(0.25f);
-
-			for (FVector& Vertex : CollisionShape.Vertices)
-			{
-				Vertex -= CoM;
-			}
-		}
 
 		for (FVector& Vertex : CollisionShape.Vertices)
 		{
@@ -717,16 +721,19 @@ void ARigidBodiesCustomMesh::BeginPlay()
 
 	RigidBodies.SetNum(NumRigidBodies + 2); // +2は弾とフロアの分
 
+	// StaticMeshの質量計算に用いる
+	float Volume = 0.0f;
+
 	// RigidBodiesは0番目は弾で1番目はフロアに。2番目以降が各剛体。
 	FRigidBody& AmmoRigidBody = RigidBodies[0];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, 0, AmmoRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Ellipsoid, FVector(50.0f), 0.0f, nullptr, 0, AmmoRigidBody.CollisionShape, Volume);
 	AmmoRigidBody.MotionType = ERigdBodyMotionType::Static;
 	AmmoRigidBody.Mass = 1.0f; // 弾は固定で1kg扱いしている
 	AmmoRigidBody.Inertia = CalculateInertia(ERigdBodyGeometry::Ellipsoid, AmmoRigidBody.Mass, 0.01f, FVector(50.0f), 50.0f, AmmoRigidBody.CollisionShape);
 	AmmoRigidBody.Position = FVector(5000.0f, 5000.0f, 5000.0f);
 
 	FRigidBody& FloorRigidBody = RigidBodies[1];
-	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, nullptr, 0, FloorRigidBody.CollisionShape);
+	CreateConvexCollisionShape(ERigdBodyGeometry::Box, FloorScale, 0.0f, nullptr, 0, FloorRigidBody.CollisionShape, Volume);
 	FloorRigidBody.MotionType = ERigdBodyMotionType::Static;
 	FloorRigidBody.Mass = 0.0f; // フロアはStaticなので無限質量扱いにしてるので使っていない
 	FloorRigidBody.Inertia = FMatrix::Identity; // フロアはStaticなので無限質量扱いにしてるので使っていない
@@ -741,12 +748,12 @@ void ARigidBodiesCustomMesh::BeginPlay()
 		const FRigidBodySetting& Setting = RigidBodySettings[i - 2];
 
 		FRigidBody& RigidBody = RigidBodies[i];
-		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, Setting.NumHole, RigidBody.CollisionShape);
+		CreateConvexCollisionShape(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.StaticMesh, Setting.NumHole, RigidBody.CollisionShape, Volume);
 
 		RigidBody.MotionType = Setting.MotionType;
 		if (Setting.bUseDensity || Setting.Geometry == ERigdBodyGeometry::Capsule || Setting.Geometry ==  ERigdBodyGeometry::StaticMesh)
 		{
-			RigidBody.Mass = CalculateMass(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.Density, RigidBody.CollisionShape);
+			RigidBody.Mass = CalculateMass(Setting.Geometry, Setting.HalfExtent, Setting.Height, Setting.Density, RigidBody.CollisionShape, Volume);
 		}
 		else
 		{
